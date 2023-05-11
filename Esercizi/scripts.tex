@@ -1,0 +1,108 @@
+\section{Script}
+\subsection{lez-01}
+\begin{flushleft}
+  1.0) Esempio prova \\
+  \texttt{
+  nargs=\$\# \\
+  while [[ \$1 != "" ]]; do \\
+    \tab echo "ARG=\$1" \\
+    \tab shift \\
+  done}\\
+\end{flushleft}
+
+\begin{flushleft}
+  1.1) Scrivere uno script che dato un qualunque numero di argomenti li restituisca in 
+  output in ordine inverso.
+  
+  \texttt{\\
+  lista=()\\
+  while [[ \$1 != "" ]]; do \\
+   \tab lista=( "\$1" "\${lista[@]}" )\\
+   \tab shift\\
+  done \\
+  echo "\${lista[@]}"}\\
+\end{flushleft}
+
+\begin{flushleft}
+  1.2) Scrivere uno script che mostri il contenuto della cartella corrente in ordine 
+  inverso rispetto all'output generato da "ls" (che si può usare ma senza opzioni). 
+  Per semplicit\aca, assumere che tutti i file e le cartelle non abbiano spazi nel nome.
+  
+  \texttt{\\dati=(\$( ls ))\\
+  lista=()\\
+  for i in \${!dati[@]}; do \\
+    \tab lista=( "\${dati[\$i]}" "\${lista[@]}" )\\
+  done \\
+  echo \$( ls )\\
+  echo "\${lista[@]}"}
+\end{flushleft}
+
+\subsection{lez-02}
+
+\begin{flushleft}
+  2.1) Creare un makefile con una regola help di default che mostri una nota 
+  informativa, una regola backup che crei un backup di una cartella appendendo 
+  “.bak” al nome e una restore che ripristini il contenuto originale.
+  
+  \texttt{SHELL := /bin/bash\\
+  FOLDER := /tmp\\
+  \tab \\
+  help: \\
+  \tab	@echo "make -f makefile\_backup backup FOLDER=<path>"\\
+  \tab \\
+  backup:\\
+  	\tab @echo "Backup of folder \$(FOLDER) as \$(FOLDER).bak..." ; \\
+    \tab sleep 2s\\
+  	\tab @[[ -d \$(FOLDER).bak ]] \&\& echo "?Error" || cp -rp \$(FOLDER) \$(FOLDER).bak\\
+    \tab \\
+  restore: \$(FOLDER).bak\\
+  	\tab @echo "Restore of folder  \$(FOLDER) from \$(FOLDER).bak..." ; \\
+    \tab sleep 2s\\
+  	\tab @[[ -d \$(FOLDER) ]] \&\& echo "?Error" || cp -rp \$(FOLDER).bak \$(FOLDER)\\
+  \tab \\
+  .PHONY: help backup restore\\
+  } 
+\end{flushleft}
+\subsection{lez-03}
+\begin{flushleft}
+3.1) Scrivere un'applicazione che data una stringa come argomento ne stampa a video la 
+lunghezza, ad esempio:
+\texttt{./lengthof "Questa frase ha 28 caratteri"}\\
+deve restituire a video il numero 28 \\ 
+\texttt{\#include <stdio.h>\\
+int main(int argc, char **argv)\{ \\
+  \tab int code = 0; \\
+  \tab int len = 0; \\
+  \tab char *p; \\
+  \tab printf("\%d\textbackslash n", argc); \\
+  \tab if(argc != 2) \{ \\
+    \tab \tab fprintf(stderr,"Usage: \%s <stringa>\textbackslash n", argv[0]); \\
+    \tab \tab code = 2; \\
+  \tab \}else \{ \\
+    \tab \tab p = argv[1]; //Copy pointer to first argument \\
+    \tab \tab while (*p != 0 )\{  //Check if character is termination\\
+      \tab \tab \tab p++; //Move to next char \\
+      \tab \tab \tab len++; //Increase length count \\
+    \tab \tab \} \\
+    \tab \tab printf("\%d\textbackslash n", len); \\
+  \tab \} \\
+  \tab return code; \\
+\}
+}
+\end{flushleft}
+
+\begin{flushleft}
+  3.2) Scrivere un'applicazione che definisce una lista di argomenti validi e legge quelli passati 
+  alla chiamata verificandoli e memorizzando le opzioni corrette, restituendo un errore in 
+  caso di un'opzione non valida. \\
+  \textit{Non ho voglia di copiarlo}
+\end{flushleft}
+
+\begin{flushleft}
+  3.3) Realizzare funzioni per stringhe \texttt{char *stringrev(char * str)} (inverte ordine 
+caratteri) e \texttt{int stringpos(char * str, char chr)} (cerca chr in str e restituisce la 
+posizione) \\
+(Non completo, controllare stringrev, da segmentation fault)
+\end{flushleft}
+
+\subsection{lez-04}

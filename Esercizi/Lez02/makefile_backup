@@ -1,0 +1,15 @@
+SHELL := /bin/bash
+FOLDER := /tmp
+
+help: 
+	@echo "make -f makefile_backup backup FOLDER=<path>"
+
+backup:
+	@echo "Backup of folder $(FOLDER) as $(FOLDER).bak..." ; sleep 2s
+	@[[ -d $(FOLDER).bak ]] && echo "?Error" || cp -rp $(FOLDER) $(FOLDER).bak
+
+restore: $(FOLDER).bak
+	@echo "Restore of folder  $(FOLDER) from $(FOLDER).bak..." ; sleep 2s
+	@[[ -d $(FOLDER) ]] && echo "?Error" || cp -rp $(FOLDER).bak $(FOLDER)
+
+.PHONY: help backup restore

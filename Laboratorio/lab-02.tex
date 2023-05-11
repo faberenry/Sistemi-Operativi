@@ -1,0 +1,253 @@
+\section{Lab-02}
+\begin{flushleft}
+  \textbf{Docker}: Tecnologia di virtualizzazione a livello del sistema Operativo che 
+  consente la creazione, gestione e esecuzione di applicazioni attraverso containers \\
+  \textbf{Containers}: sono ambieni leggeri, dinamici ed isolati che vengono eseguiti sopra 
+  il kernel Linux\par 
+  $$\begin{array}{l|l}
+    \textbf{Docker Container} & \textbf{Virtual Machine} \\
+    \circ \textit{ Virtualizzazione a livello OS} & \bullet \textit{ Virtualizzazione a livello HW}\\ 
+    \circ \textit{ Containers condividono il kernel} & \bullet \textit{ Ogni VM ha il suo OS}\\
+    \circ \textit{ Avvio e creazione in secondi } & \bullet \textit{ Avvio e creazione in minuti}\\
+    \circ \textit{Leggere (KB/MB)} & \bullet \textit{ Pesanti (GB)}\\
+    \circ \textit{Utilizzo leggero di risorse} & \bullet \textit{ Utilizzo intenso di risorse}\\
+    \circ \textit{Si distruggono e si rieseguono} & \bullet \textit{ Si trasferiscono}\\ 
+    \circ \textit{Minore sicurezza} & \bullet \textit{ Maggiore sicurezza}\\
+    & \bullet \textit{ Maggiore controllo} \\
+    \circ \textit{Basati su immagini (gi\aca pronte)} & \\
+  \end{array}$$
+  \textbf{Compatibilit\aca}
+  \begin{itemize}
+    \item \textbf{Linux}: docker gestisce i containers usando il kernel linux nativo
+    \item \textbf{Windows}: docker gestisce i containers usando il kernel linux tramite WSL2
+            (originariamente \textbf{virtualizzato} tramite Hyper-V), gestito da un applicazione
+    \item \textbf{Mac}: docker gestisce i container usando il kernel linux virtualizzato tramite xhyve hypervysor, 
+          gestito da una applicazione
+  \end{itemize}
+  \textbf{Immagine}: Un'immagine docker \ace un insieme di istruzioni per la creazione di un 
+  container. Essa consente di ragruppare varie applicazioni ed eseguirle, con una certa configurazione, 
+  in maniera pi\acu rapida attraverso un container \\ 
+  \textbf{Container}: I containers sono invece gli ambienti virtualizzati gestiti da docker, che possono essere creati, 
+  avviati, fermati ed eliminati. I container sono \textbf{basati} su una immagine
+\end{flushleft}
+\begin{flushleft}
+  \textbf{Gestione dei containers} \par 
+  \begin{itemize}
+    \item \texttt{docker run [options] <image>}: crea un nuovo container da un'immagine 
+    \item \texttt{docker container ls [options]}: mostra i containers attivi (\texttt{[-a]} li mostra tutti)
+    \item \texttt{docker exec [options] <container> <command>}: esegue il comando al'interno del container
+    \item \texttt{docker stats}: mostra le statistiche di utilizzo dei containers
+    \item \texttt{docker <command> --help}: aiuto su specifico comando
+  \end{itemize}
+  \textbf{Parametri opzionali}
+  \begin{itemize}
+    \item \texttt{--name <nome>}: assegna un nome specifico al container
+    \item \texttt{-d}: detach mode, cio\ace scollega il container
+    \item \texttt{-ti}: esegue il container in modalit\aca interattiva, per collegarsi \texttt{docker attach <container>}, scollegarsi \texttt{Crtl-P,Crtl-Q}
+    \item \texttt{--rm}: elimina container all'uscita
+    \item \texttt{--hostname <nome>}: imposta l'hostname nel container
+    \item \texttt{--workdir <path>}: imposta la cartella di lavoro nel container
+    \item \texttt{--network host}: collega il container alla rete locale, la modalit\aca host non funziona a causa della VM sottostante
+    \item \texttt{--privileged}: esegue il container con i privilegi dell'host
+  \end{itemize}
+\end{flushleft}
+\begin{flushleft}
+  \textbf{Gestione delle immagini}\par 
+  \ac{E} possibile creare nuove immagini delle docker
+  \begin{itemize}
+    \item \texttt{docker images}: mostra le immagini salvate
+    \item \texttt{docker rmi <imageID>}: elimina immagine se non in uso
+    \item \texttt{docker search <keyword>}: cerca un'mmagine nella repository di docker
+    \item \texttt{docker commit <container> <repository/imageName>}: crea una nuova immagine dai 
+          cambiamenti nel container
+  \end{itemize}
+\end{flushleft}
+\begin{flushleft}
+  \textbf{Dockerfile} \par 
+  I dockerfile sono dei documenti testuali che raccolgono una serie di comandi 
+  necessari alla creazione di una nuova immagine. Ogni nuova immagine sar\aca generata 
+  a partire da un'immagine di base, come Ubuntu o l'immagine minimale 'scratch'. La 
+  creazione a partire da un docker file viene gestita attraverso del caching che ne 
+  permette la ricompilazione rapida in caso di piccoli cambiamenti.\\
+  \begin{flushleft}
+    \textbf{Esempio}:\\
+    \texttt{FROM ubuntu:22.04 \\ 
+      RUN apt-get update \&\& apt-get install build-essential nano -y\\
+      RUN mkdir /home/labOS \\
+      CMD cd /home/labOS \&\& bash
+    }\\
+    \texttt{docker build -t /labos/ubuntu - < dockerfile}
+  \end{flushleft}
+\end{flushleft}
+\begin{flushleft}
+  \textbf{Gestione dei volumi}\\
+  Docker salva i file persistenti su bind mount o su dei volumi. Sebbene i bind 
+  mount siano strettamente collegati con il filesystem dell'host OS, consentendo 
+  dunque una facile comunicazione con il containers, i volumi sono ormai lo standard 
+  in quanto indipendenti, facili da gestire e più in linea con la filosofia di docker.
+  \begin{flushleft}
+    \textbf{Sintassi comandi}
+    \begin{itemize}
+      \item \texttt{docker volume create <volumeName>}: crea un nuovo volume
+      \item \texttt{docker volume ls}: mostra i volumi esistenti
+      \item \texttt{docker volume inspect <volumeName>}: esamina volume
+      \item \texttt{docker volume rm <volumeName>}: rimuove il volume
+      \item \texttt{docker run -v <volume>:<path/in/container> <image>}: crea un 
+            nuovo container con il volume specificato montato nel percorso specificato
+      \item \texttt{docker run -v <pathHost>:<path/in/container> <image>}: crea un nuovo container
+            con un bind mount specificato mostrato nel percorso specificato
+    \end{itemize}
+  \end{flushleft}
+\end{flushleft}
+\begin{flushleft}
+  \textbf{GCC} \par 
+  GCC = Gnu Compiler Collection, insiemi di strumenti open-source che costituisce 
+  lo standard per la creazione di eseguibili Linux. Supporta diversi linguaggi e consente
+  la modifica dei vari passaggi intermedi per una completa personalizzazione dell'eseguibile\\
+  \textbf{Compilazione} \\
+  Gli strumenti gcc possono essere chiamati singolarmente:
+  \begin{itemize}
+    \item \texttt{gcc -E <sorgente.c> -o <preProcessed.ii|i>}
+    \item \texttt{gcc -S <preProcessed.ii|i> -o <assembly.asm|.s>}
+    \item \texttt{gcc -c <assembly.asm|.s> -o <objectFile.obj|.o>}
+    \item \texttt{gcc <objectFile.obj|.o> -o <executable.out>}
+  \end{itemize}
+  l'input di ogni comando pu\aco essere il file sorgente, e l'ultimo comando \ace in grado di creare
+  direttamente l'eseguibile, inoltre l'assembly e il codice macchina generato dipendono 
+  dall'architettura di destinazione
+\end{flushleft}
+\begin{flushleft}
+  \textbf{Make}\par 
+  \textbf{Make tool}: \ace uno strumento della collezione GNU che pu\aco essere usato 
+  per gestire la compilazione automatica e selettiva di grandi e piccoli progetti. \\
+  Consente di specificare delle dipendenze tra i vari file, per esempio consentendo solo 
+  la compilazione delle librerie in cui i sorgenti sono stati modificati\\ 
+  Pu\aco anche essere usato per gestire un deployment di una applicazione, assumendo 
+  alcune delle capacit\aca  di uno scipt bash \par 
+  \textbf{Makefile}: Make pu\aco eseguire dei makefiles i quali contengono tutte le direttive 
+  utili alla compilazione di un'applicazione 
+  \begin{center}
+    \texttt{make -f makefile}
+  \end{center}
+  in alternativa, il comando make senza argomenti processer\aca il 'makefile' presente 
+  nella cartella di lavoro. \\ 
+  Makefiles secondari possono essere inclusi nel makefile principale con delle 
+  direttive specifiche, consentendo una gestione pi\acu articolata di grandi progetti
+  \begin{flushleft}
+    \textbf{Target, prerequisite and recipes}
+    \begin{itemize}
+      \item Una \textbf{ricetta} o \textbf{regola} è una lista di comandi bash che 
+            vengono eseguiti indipendentemente dal resto del makefile.
+      \item I \textbf{target} sono generalmente dei files generati da uno specifico insieme di regole. 
+            Ogni target pu\aco specificare dei prerequisiti.
+      \item \textbf{Prerequisiti}: ovvero degli altri file che devono esistere affinch\ace le regole di un 
+            target vengano eseguite. Un prerequisito può essere esso stesso un target! 
+    \end{itemize}
+    L'esecuzione di un file make inizia specificando uno o più target 
+    \texttt{make -f makefile target1 ...} e prosegue a seconda dei vari prerequisiti.\\
+    \texttt{target: prerequisite \\
+            \tab recipe/rule \\
+            \tab recipe/rule \\
+            \tab ...\\}
+    \textbf{Esempio}:\\
+    \texttt{target1: target2 target3 \\
+            \tab rule(3)\\
+            \tab rule(4) \\
+            \tab ...\\
+            \tab \\
+            target2: target3 \\
+            \tab rule(1) \\
+            \tab \\ 
+            target3:\\
+            \tab rule(2)}
+    \begin{flushleft}
+      \textbf{Sintassi}\par
+      Un makefile \ace un file di testo plain in cui righe vuote e parti di testo dal 
+      il carattere \# fino alla fine della riga non  in una ricetta (considerato un commento)\\
+      Le ricette/rule devono iniziare con il carattere TAB \\
+      Una ricetta che inizia con TAB@ non viene visualizzata in output, altrimenti i 
+      comandi sono visualizzati e poi eseguiti, una riga con un singolo TAB \ace una ricetta vuota.\\
+      Esistono costrutti pi\acu complessi  per necessit\aca particolari. 
+    \end{flushleft}
+    \begin{flushleft}
+      \textbf{Target Speciali}\par 
+      Se non viene passato alcun target viene eseguito quello di default: il primo disponibile. 
+      Esistono poi dei target con un significato e comportamento speciale 
+      \begin{itemize}
+        \item \texttt{.INTERMEDIATE e .SECONDARY}: hanno come prerequisiti i target intermedi, nel primo 
+              caso sono poi rimossi, nel secondo sono mantenuti a fine esecuzione
+        \item \texttt{.PHONY}: ha come prerequisiti i target che non corrispondono a dei files, o 
+              comunque da eseguire "sempre" senza verificare l'eventuale file omonimo
+      \end{itemize}
+      In un target, il simbolo \% sostituisce una qualunque stringa, in un prerequisito
+      corrisponde alla stringa sostituita nel target\\
+      \textbf{Esempio}:
+      \begin{flushleft}
+        \texttt{all: ... \\ 
+                \tab rule \\ 
+                \tab \\ 
+                .SECONDARY: target1 .. \\
+                \tab \\
+                .PHONY: target2 ..\\
+                \tab \\ 
+                \%.s : \%.c \\ 
+                \tab \#prova.s: prova.c \\
+                \tab \#src/h.s: src/h.c} 
+      \end{flushleft}
+    \end{flushleft}
+    \begin{flushleft}
+      \textbf{Variabile utenti e automaitche}\par 
+      \begin{itemize}
+        \item \textbf{Utente}: Le variabili utente si definiscono con la sintassi 
+              \texttt{nome:=valore} oppure \texttt{nome=valore} e vengono usate 
+              con \texttt{\$(nome)}, inoltre possono essere sovrascritte da riga di 
+              comando cone \texttt{make nome=value}
+        \item \textbf{Automatiche}: Le variabili automatiche possono essere usate all'interno 
+              delle regole per riferirsi ad elementi specifici relativi al target corrente. \\
+              La variabile SHELL pu\aco essere usata per specificare la shell di riferimento 
+              per l'esecuzione di makefile, esempio SHELL=/bin/bash abilita bash anzich\ace SH
+      \end{itemize}
+    \end{flushleft}
+    \begin{flushleft}
+      \textbf{Funzioni speciali}\\
+      \begin{itemize}
+        \item \texttt{\$(eval ...)}:consente di creare nuove regole make dinamiche
+        \item \texttt{\$(shell ...)}: cattura l'output di un comando shell
+        \item \texttt{\$(wildcard *)}: restituisce un elenco di file che corrispondono alla stringa specificata
+      \end{itemize}
+      \textbf{Esempio}: \\
+      \texttt{LATER=hello\\
+        PWD=\$(shell pwd)\\
+        OBJ\_FILES:=\$(wildcard *.o)\\
+        \tab \\
+        target1:\\
+        \tab echo \$(LATER) \#hello\\
+        \tab \$(eval LATER+= world)\\
+        \tab echo \$(LATER) \#hello world
+      }
+    \end{flushleft}
+  \end{flushleft}
+  \begin{flushleft}
+    \textbf{Esempio}: \\
+    \texttt{all: main.out\\
+              \tab @echo "Application compiled"\\
+            \tab \\
+            \%.s: \%.c\\
+              \tab gcc -S \$< -o \$@\\
+            \tab \\
+            \%.out: \%.s\\
+              \tab mkdir -p build \\
+              \tab gcc \$< -o build/\$@\\
+            \tab \\
+            clean: \\
+              \tab rm -rf build *.out *.s \\
+            \tab \\
+            .PHONY: clean\\
+            \tab \\
+            .SECONDARY: make.s\\
+    }
+  \end{flushleft}
+  Docker, GCC e make possono essere utilizzati per la gestione delle varie applicazioni 
+  in C. Ognuno di questi strumenti non \ace indispensabile ma permette di creare un 
+  flusso di lavoro coerente e strutturato
+\end{flushleft}

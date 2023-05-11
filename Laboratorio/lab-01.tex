@@ -1,0 +1,401 @@
+\section{Lab-01}
+\begin{flushleft}
+  \textbf{Terminale:} \ace l'ambiente testuale di interazione con il sistema operativo. \par Tipicamente usato come
+  applicazione all'interno dell'ambiente grafico ed \ace possibile avviarne pi\acu istanze, \ace anche disponibile all'avvio. 
+\end{flushleft}
+\begin{flushleft}
+  \textbf{Shell}: All'interno del terminale, l'interazione avviene utilizzando una applicazione specifica in esecuzione 
+  al suo interno, comunemente detta Shell. \par 
+  Essa propone un prompt per l'immissione diretta dei comandi da tastiera e fornisce un feedback testuale, \ace anche possibile 
+  eseguire sequenze di comandi preorganizzate contenute in file testuali, chiamati \textit{script} o \textit{batch}.
+  A seconda della modalit\aca alcuni comandi possono avere senso o meno o comportarsi in modo particolare.\par \par
+  L'insieme dei comandi e delle regole di composizione costituisce un linguaggio di programmazione orientato allo scripting. 
+\end{flushleft}
+\begin{flushleft}
+  \textbf{Bash}: Esistono molte shell. La shell \textbf{Bash} \ace una di quelle pi\acu utilizzate e molte sono comunque sono molto simili 
+  tra di loro, ma hanno sempre qualche differenza. \par
+  Tipicamente - almeno in sessioni non grafiche - al login un utent ha associata una shell particolare
+\end{flushleft}
+\begin{flushleft}
+  \textbf{POSIX}: \textbf{P}ortable \textbf{O}perating \textbf{S}ystem \textbf{I}nterface for Uni\textbf{x}: \ace una famiglia  di standard IEEE.\\
+  Nel caso delle shell in particolare definisce una serie di regole e comportamenti  che possono favorire la probabilit\aca \par 
+  La shell bash soddisfa molti requisiti POSIX, ma presenta alcune differenze ed "estensioni" per agevolare la programmazione. 
+\end{flushleft}
+\begin{flushleft}
+  \textbf{Comandi Interattivi}: La shell attende un input dall'utente e al completamento, di solito premendo INVIO, lo elabora. \par 
+  Per indicare l’attesa mostra all’utente un PROMPT (può essere modificato). \\
+  Fondamentalmente si individuano 3 canali:
+  \begin{itemize}
+    \item Standard input (tipicamente la tastiera), canale 0, detto \textit{stdin}
+    \item Standard output (tipicamente il video), canale 1, detto \textit{stdout}
+    \item Standard error (tipicamente il video), canale 2, detto \textit{stderr}
+  \end{itemize}
+\end{flushleft}
+\begin{flushleft}
+  \textbf{Struttura generale comandi}: Solitamente un comando \ace identificato da una parola chiave cui possono seguire uno o 
+    più "argomenti" opzionali o obbligatori, accompagnati da un valore di riferimento o 
+    meno (in questo caso hanno valore di "flag") e di tipo posizionale o nominale. A volte 
+    sono ripetibili. \par
+    \begin{center}
+      \textit{ls -alh /tmp} 
+    \end{center}
+    gli argomenti nominali sono indicati con un trattino cui segue una voce (stringa 
+    alfanumerica) e talvolta presentano una doppia modalit\aca di riferimento: breve 
+    (tipicamente voce di un singolo carattere) e lunga (tipicamente un termine mnemonico)
+    \begin{flushleft}
+      \textit{ls -h} / \textit{ls -help}
+    \end{flushleft}
+\end{flushleft}
+\begin{flushleft}
+  \textbf{Termini}:
+  \begin{itemize}
+    \item l'esecuzione dei comandi avviene "per riga" (in modo diretto quella che si immette fino a INVIO)
+    \item un "termine" (istruzione, argomento, opzione, etc.) è solitamente una stringa alfanumerica senza spazi
+    \item spaziature multiple sono spesso valide come singole e non sono significative se non per separare i termini 
+    \item \ace possibile solitamente usare gli apici singoli/doppi per forzare una sequenza come singolo termine
+    \item gli spazi iniziali e finali di una riga collassano 
+    \item le righe vuote sono ignorate
+  \end{itemize}
+\end{flushleft}
+\begin{flushleft}
+  \textbf{Commenti}: \ac{E} anche possibile utilizzare dei commenti da passare alla shell. L'unico modo formale 
+  \ace l'utilizzo del carattere \# per cui esso e tutto ci\aco che segue fino al termine della riga viene ignorato
+  \begin{flushleft}
+    \textit{ls -la \# this part is a comment}
+  \end{flushleft} 
+\end{flushleft}
+\begin{flushleft}
+  \textbf{Comandi fondamentali}: I comandi possono essere "builtin" (funzionalit\aca intrinseche dell'applicazione 
+  shell utilizzata) o "esterni" (applicazioni eseguibili che risiedono su disco).
+  \begin{itemize}
+    \item clear (\textit{clearing the terminal screen in Linux})
+    \item pwd (\textit{prints the current working directory path, starting from the root(/)})
+    \item ls  (\textit{list files or directories})
+    \item cd (\textit{list the contents of the current directory})
+    \item wc (\textit{creates a new file in your current working directory with the name wc with the output of your ls command})
+    \item date (\textit{displays and sets the system date and time})
+    \item cat (\textit{allows us to create single or multiple files, view content of a file, concatenate files and redirect output in terminal or files})
+    \item echo (\textit{displaying lines of text or string which are passed as arguments on the command line})
+    \item alias/unalias (\textit{is a way to make a complicated command or set of commands simple/remove the definition for each alias name specified})
+    \item test (\textit{used as part of the conditional execution of shell commands})
+    \item read (\textit{attempts to read up to count bytes from file descriptor fd into the buffer starting at buf})
+    \item file (\textit{tells you the type of a file})
+    \item chown (\textit{changes the user and/or group ownership of each given file})
+    \item chmod (\textit{used to manage file system access permissions on Unix and Unix-like systems})
+    \item cp/mv (\textit{copy a file/directory into another directory/moves a file/directory into another directory})
+    \item help (\textit{listing all possible commands that are pre-installed in Ubuntu})
+    \item type (\textit{used to describe how its argument would be translated if used as commands})
+    \item grep (\textit{allows you to find a string in a file or stream})
+    \item function (\textit{a reusable block of code})
+  \end{itemize}
+\end{flushleft}
+\begin{flushleft}
+  \textbf{Canali Input/Output} \\
+  Ogni comando lavora su un insieme di canali, come standar output o un file descriptor 
+\end{flushleft}
+\begin{flushleft}
+  \textbf{Ridirizionamento di base}\par 
+  I canali possono anche essere ridirezionati, ad esempio
+  \begin{itemize}
+    \item ls $1>$/tmp/out.txt $2>$/tmp/err.txt
+    \item ls nonExistingItem $1>/tmp/err.txt$ $2>\&1$
+  \end{itemize}
+  \begin{itemize}
+    \item $<$: $command<file$ invia l'input al comando (file.txt read-only) \\
+          mail -s "subject" $rcpt< context.txt$ (anzich\ace iterattivo)
+    \item $<>$: come sopra solo che il file.txt \ace aperto in read-write
+    \item $source>target: command 1>out.txt 2>err.txt$ \\
+          ridireziona source su target (source pu\aco essere sottointeso, target pu\aco essere un canale)
+    \item $>|$: si comporta come $>$ ma forza la sovrascrittura anche se bloccata nelle configurazioni
+    \item $>>$: si comporta come $>$ ma opra un append se la destinazione esiste
+    \item $<<$: here-document, consente all'utente di specificare  un terminatore testuale, dopodiche 
+          accetta l'input fino alla ricezione di tale terminatore
+    \item $<<<$: here-string, consente di fornire input in maniera non iterattiva
+  \end{itemize}
+  Esistono molte varianti e possibilit\aca di combinazione dei vari operatori \\
+  Un caso molto usato \ace la soppressione dell'output (utile per gestire solo side-effects, come 
+  il codice di ritorno), esempio:\\
+  $type command 1>dev/null 2>\&1$ (per sapere se command esiste)
+\end{flushleft}
+\begin{flushleft}
+  \textbf{Ambiente e variabili}\par 
+  \begin{itemize}
+    \item La shell pu\aco utilizzare variabili per memorizzare e recuperare i valori 
+    \item I valori sono generalmente trattati come stringhe o interi: sono presenti anche semplici array
+    \item Il formato del nome \ace del tipo: $^{\wedge}[\_[:alpha:]\,]\,[\_[:alnum:]\,]\*\$$
+    \item Per set (impostare) / get (accedere) al valore di una variabile: 
+          \begin{itemize}
+            \item Il set si effettua con $[export] variabile=valore$, lo scope \ace generalmente quello 
+                  del processo attuale: anteponendo export si rende disponibile anche ai processi figli 
+            \item Il get si effettua con $\$variabile$ o $\$\{variabile\}$
+          \end{itemize}
+    \item La shell opera in un ambiente in cui ci sono alcuni riferimenti impostabili e utilizzabili
+          attraverso l'uso delle cosiddette "variabili d'ambiente" con cui si intendono generalmente quelle
+          con un significato particolare per la shell stessa, tra le variabili d'ambiente pi\acu comuni vi sono:
+          $$SHELL, PATH, TERM, PWD, PS1, HOME$$
+          Essendo variabili si impostano e usano come le altre
+  \end{itemize}
+  \textbf{Variabili di sistema} \par 
+  Alcune variabili sono impostate e/o utilizzate direttamente dal sistema in casi particolari. 
+  \begin{itemize}
+    \item SHELL: contiene il riferimento alla shell corrente (path completo)
+    \item PATH: contiente i percorsi in ordine di priorit\aca in cui sono cercati i comandi (separati da :)
+    \item TERM: contiene il tipo di terminale corrente
+    \item PWD: contiene la cartella corrente
+    \item PS1: contiene il prompt e si possono usare marcatori speciali
+    \item HOME: contiene la cartella principale all'utente corrente
+  \end{itemize}
+\end{flushleft}
+\begin{flushleft}
+  \textbf{Esecuzione comandi e \$PATH}\par
+  Quando si immette un comando (o una sequenza di comandi) la shell analizza 
+  quanto inserito (parsing) e individua le parti che hanno la posizione di comandi 
+  da eseguire: se sono interni ne esegue le funzionalità direttamente altrimenti 
+  cerca di individuare un corrispondente file eseguibile: questo è normalmente
+  cercato nel file-system solo e soltanto nei percorsi definiti dalla variabile PATH a 
+  meno che non sia specificato un percorso (relativo o assoluto) nel qual caso viene 
+  utilizzato esso direttamente.
+  Dall'ultima osservazione discende che per un'azione abbastanza comune come 
+  lanciare un file eseguibile (non “installato”) nella cartella corrente occorre 
+  qualcosa come: ./nomefile
+\end{flushleft}
+\begin{flushleft}
+  \textbf{Array}\par 
+  \begin{itemize}
+    \item Definizione: lista=("a" 1 "b" 2 "c" 3) separati da spazi
+    \item Output completo: $\{\$lista[@]\}$
+    \item Accesso singolo: $\{\$lista[x]\}$
+    \item Lista indici: $\{\$!lista[@]\}$
+    \item Dimensione: $\{\#lista[@]\}$
+    \item Set elemento: $lista[x] = value$
+    \item Append: $lista+=(value)$
+    \item Sub-array: $\$lista[@]:s:n$, dall'indice s di lunghezza n
+  \end{itemize}
+\end{flushleft}
+\begin{flushleft}
+  \textbf{Variabili \$\$ e \$?}\\
+  Le variabili \$\$ e \$? non possono essere impostate manualmente.
+  \begin{itemize}
+    \item \$\$: contiente il PID del processo attuale
+    \item \$?: contiente il codice di ritorno dell'ultimo comando eseguito
+  \end{itemize}
+\end{flushleft}
+\begin{flushleft}
+  \textbf{Esecuzione comandi e Parsing}\par 
+  La riga dei comandi \ace elaborata con una serie di azioni "in sequenza" e poi 
+  rielaborata pi\acu volte, tra le azioni ci sono:
+  \begin{itemize}
+    \item Sostituzioni speciali della shell
+    \item Sostituzione variabili
+    \item Elaborazione subshell
+  \end{itemize}
+  sono svolte con un ordine di priorit\aca e poi l'intera riga \ace rielaborata
+\end{flushleft}
+\begin{flushleft}
+  \textbf{Concatenazioni Comandi}\par 
+  \ac{E} possibile concatenare pi\acu comandi in un'unica riga in vari modi con effetti differenti 
+  \begin{itemize}
+    \item comand1 ; comand2: concatenazione semplice, esecuzione in sequenza
+    \item comand1 \&\& comand2: concatenazione logica (AND), l'esecuzione procede solo 
+          se il comando precedente non fallisce (\textbf{codice ritorno 0})
+    \item comand1 || comand2: concatenazione logica (OR), l'esecuzione procede solo 
+          se il comando precedente non fallisce (\textbf{codice riotrno NON 0})
+    \item comand1 | comand2 : concatenazione con piping
+  \end{itemize}
+\end{flushleft}
+\begin{flushleft}
+  \textbf{Operatori di piping (pipe): | e |\&} \par 
+  La concatenazione con gli operatori di piping  cattura l'output di un comando e 
+  lo passa in input al successivo 
+  \begin{itemize}
+    \item ls | wc -l: cattura solo stdout
+    \item ls |\& wc -l: cattura stdout e stderr
+  \end{itemize}
+  \textbf{Nota}: il comando ls ha un comportamento atipico: il suo output di base \ace differente 
+  a seconda che il comando sia diretto al terminale o a un piping
+\end{flushleft}
+\begin{flushleft}
+  \textbf{Subshell}\par 
+  \ac{E} possibile avviare  una subshell, ossia un sotto-ambiente in vari modi, in 
+  particolare raggruppando i comandi tra parentesi tonde: ( ... comandi ... )\\
+  Spesso si usa il catturare l'output standard della sequenza che viene sostituito letteralmente 
+  e rielaborato, ci sono due modi per farlo: \$ (... comandi ... ) oppure $\grave{} \, comandi \,\, \grave{}$
+\end{flushleft}
+\begin{flushleft}
+  \textbf{Esempio}\par 
+  $$\texttt{echo "/tmp" > /tmp/tmp.txt ; ls \$(cat /tmp/tmp.txt)}$$
+  i comandi sono eseguiti rispettando la sequenza:
+  \begin{enumerate}
+    \item \texttt{echo "/tmp" > /tmp/temp.txt}: crea un file temporaneo con /tmp
+    \item \texttt{ls \$(cat /tmp/tmp.txt)}: \ace prima eseguita la subshell 
+          \begin{itemize}
+            \item \texttt{cat /tmp/tmp.txt} che genera in stdout \texttt{"/tmp"} e poi con sostituzione:
+            \item \texttt{ls /tmp} mostra il contenuto della cartella /tmp
+          \end{itemize}
+  \end{enumerate}
+\end{flushleft}
+\begin{flushleft}
+  \textbf{Espansione Aritmetica}\par 
+  La sintassi base per una subshell \ace da non confondere con l'espansione aritmetica 
+  che utilizza le doppie parentesi rotonde, all'interno delle doppie parentesi rotonde
+  si possono rappresentare varie espressioni matematiche inclusi assegnamenti e confronti 
+  $$\texttt{((a=7))((a++))((a<10))((a = 3>10?1:0))}$$
+  $$\texttt{b = \$((c+a))}$$
+\end{flushleft}
+\begin{flushleft}
+  \textbf{Confronti Logici}\par 
+  I costrutti fondamentali per i confronti logici sono il comando \texttt{test ...} e i 
+  ragruppamenti tra parentesi quadre singole e doppie: \texttt{[ ... ]}, \texttt{[[ ... ]]}\\
+  Dove \texttt{test ... } e \texttt{[ ... ]} sono builtin equivalenti mentre 
+  \texttt{[[ ... ]]} \ace una coppia di \textbf{shell-keywords} \\
+  In tutti i casi il blocco di confronto  genera il codice in uscita 0 in caso di successo, un 
+  valore differente altrimenti\par 
+  \begin{itemize}
+    \item Built-in: sono sostanzialmente dei comandi il cui corpo dell'esecuzione  \ace incluso 
+          nell'applicazione shell direttamente (non eseguibili esterni) e quindi seguono sostanzialmente 
+          le regole generali dei comandi 
+    \item Shell-keywords: sono gestite come marcatori speciali cos\aci che possono 
+          "attivare" regole particolari di parsing.
+  \end{itemize}
+  Un esempio di questo sono gli operatori \texttt{< e >} che normalmente valgono 
+  come ridirezionamento, ma all'interno di \texttt{[[ ... ]]} valgono come operatori relazionali\\
+  \textbf{Tipologia operatori}\par 
+  Le parentesi quadre singole sono POSIX-compilant, mentre le doppie sono un'estensione bash. 
+  Nel primo caso gli operatori relazionali tradizionali ($>,<,...$) non possono essere 
+  usati perch\ace hanno un altro significato, salvo eventualmente l'utilizzo nelle doppie parentesi quadre, 
+  e quindi se ne usano di specifici che hanno per\aco un equivalente pi\acu tradizionale nel secondo caso\\
+  Gli operatori e le sintassi variano a seconda del tipo di informazioni utilizzate: c'\ace una 
+  distinzione sottile tra confronti per stringhe e per interi.
+  \textbf{Confronti tra Interi e Stringhe}
+  $$\begin{array}{l|c|c}
+    Interi & [...] & [[...]] \\
+    \hline & \\
+    uguale-a & -eq & == \\
+    diverso-da & -ne & != \\
+    minore/minore-uguale & -lt / -le & < / <= \\
+    maggiore/maggiore-uguale & -gt / -ge & > / >= \\
+  \end{array}$$
+  $$\begin{array}{l|cc}
+    Stringhe & [...] & [[...]] \\
+    \hline & \\
+    uguale-a & = o == \\
+    diverso-da &   != \\
+    minore/minore-uguale & /\ < & <  \\
+    maggiore/maggiore-uguale & /\ > & >  \\
+  \end{array}$$
+  Per le strighe nell'uguaglianza bisogna lasciare uno spazio prima e dopo
+  \textbf{Confronti tra Operatori Unari}
+  Esistono alcuni operatori unari ad esempio per verificare se una stringa \ace 
+  vouta, oppure per controllare l'esistenza di file in una cartella
+  \begin{itemize}
+    \item $[[\texttt{ -f /tmp/prova }]]$: \ace un file?
+    \item $[[\texttt{ -e /tmp/prova }]]$: file esiste?
+    \item $[[\texttt{ -d /tmp/prova }]]$: \ace una cartella?
+  \end{itemize}
+  \textbf{N.B.}: \ace possibile utilizzare sia $\left[\right.$ e sia $\left[\left[\right.\right.$\par
+  \textbf{Negazione}
+  Il carattere ! viene usato per negare i confronti
+\end{flushleft}
+\begin{flushleft}
+  \textbf{Script/Bash} \par 
+  \ac{E} possibile raccogliere sequenze di comandi in un file di testo che pu\aco poi 
+  essere eseguito:
+  \begin{itemize}
+    \item Richiamando il tool "bash" e passando il file come argomento
+          \begin{center}
+            \texttt{bash ../file.sh}
+          \end{center}
+    \item Impostando il bit "x" e specificando il percorso completo, o solo il 
+          nome se la cartella \ace in \$PATH
+          \begin{center}
+            \texttt{chmod +x ../file.sh \&\& ../file.sh}
+          \end{center}
+  \end{itemize}
+  \textbf{Esempio}: 
+  \begin{itemize}
+    \item \textbf{Script}: "bashpid.sh"
+          \begin{center}
+            \texttt{echo \$BASHPID \\ echo \$( \$BASHPID)}
+          \end{center}
+    \item \textbf{CLI}: \texttt{chmod +x ./bashpid.sh; echo \$BASHPID; ./bashpid.sh}
+  \end{itemize}
+  \textbf{Elementi particolari}\par 
+  Le righe vuote e i commenti (\#) sono ignorati\\
+  La prima riga pu\aco essere un \textbf{metacommento}, detto hash-bang, she-bang, che identifica 
+  un'applicazione a cui passare il file stesso come argomento (tipicamete usato per identificare l'interprete utilizzato) \\
+  Sono disponibili anche variabili speciali:
+  \begin{itemize}
+    \item \$\@: lista completa degli argomenti passati allo Script
+    \item \$\#: numero di argomenti passati allo script 
+    \item \$i: i-esimo argomento con i da 0 a n
+  \end{itemize}
+\end{flushleft}
+\begin{flushleft}
+  \textbf{Costrutti e Funzioni} \\
+  Esistono costrutti come for-loop, if-else, while-loop che possono anche essere scritti 
+  su singola riga. \\ 
+  \textbf{If-Else}:
+  \begin{flushleft}
+    \texttt{if [ \$1 -lt 10 ]; then \\
+            \tab echo less than 10 \\ 
+            elif [ \$1 -ge 20 ]; then \\
+            \tab echo greater than 20 \\
+            else \\ 
+            \tab echo between 10 and 20 \\
+            fi}
+  \end{flushleft}
+  \textbf{For-loop}:
+  \begin{flushleft}
+    \texttt{for i in \$\{!lista[@]\}; do \\ 
+            \tab echo \$\{lista[\$i]\} \\
+            done}
+  \end{flushleft}
+  \textbf{While-loop}: 
+  \begin{flushleft}
+    \texttt{while [[ \$i < 10 ]]; do \\ 
+          \tab echo \$i; (( i++ )) \\
+          done}   
+  \end{flushleft}
+  \textbf{Funzioni} \par 
+  \begin{itemize}
+    \item \texttt{function\_name () \{ \\
+              \tab \underline{local} var1 = 'C' \#variabile con scope locale \\ 
+              \tab echo \$1 \$2 \#argomenti normali della funzione \\
+              \tab return 44 \#codice di ritorno \\
+              \}
+          }\\
+    \item \texttt{function function\_name () \{commands;\}} \\
+    \item \texttt{function\_name arg1 arg2  \#chiamata della funzione con due argomenti }
+  \end{itemize}
+\end{flushleft}
+\begin{flushleft}
+  \textbf{Esercizi}
+  \begin{enumerate}
+    \item Stampare T o F se il valore di input rappresenta un file o una cartella esistente. 
+          \begin{center}
+            \texttt{[-e \$DATA] \&\& echo "T" || echo "F"}
+          \end{center}
+    \item Stampare "file", "cartella" o "?" a seconda di cosa l'input rappresenta nel fileStystem.
+          \begin{center}
+            \texttt{[-f \$DATA] \&\& echo "file" || ([-d \$DATA] \&\& echo "cartella" || echo "?")}
+          \end{center}
+          \textit{Concatenazione di if uno dentro l'altro}
+    \item Stampare il risultato di una semplice operazione aritmetica contenuta nel file 
+          rappresentato dal valore di input, oppure "?" se non esiste
+          \begin{center}
+            \texttt{[-f \$DATA] \&\& echo \$(( \$(cat \$DATA) )) || echo "?"}
+          \end{center}
+          \textit{Controllo se input \ace un file e computo l'operazione all'interno di esso, tramite (( )), altrimenti 
+          ritorna il ?}
+    \item Scrivere uno script che dato un qualunque numero di argomenti li restituisca in ordine inverso.
+    \item Scrivere uno script che mostri il contenuto della cartella corrente in ordine 
+          inverso rispetto all'output generato da "ls", per semplicit\aca assumere l'assenza di spazi 
+  \end{enumerate}
+  \textbf{N.B.}: Se eseguiti all'interno di uno script, la variabile DATA deve essere esportata con:
+  \begin{center}
+    \texttt{export DATA = valore}
+  \end{center}  
+\end{flushleft}
+L'utilizzo di BASH, tramite CLI o Script, \ace basilare per poter interagire 
+attraverso comandi con il file-system, con le risorse di sistema e per poter invocare 
+tools e applicazioni.

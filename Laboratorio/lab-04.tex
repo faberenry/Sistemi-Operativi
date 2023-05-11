@@ -1,0 +1,233 @@
+\section{Lab-04}
+\begin{flushleft}
+  \textbf{File}\par 
+  In unix ci sono due modi per interagre con i file:
+  \begin{itemize}
+    \item \textbf{Streams}:forniscono strumenti come la formattazione dei dati, bufferizzazione, ecc… \\
+          Utilizzando gli streams, un file \ace descritto da un puntatore a una struttura di tipo 
+          FILE (definita in stdio.h). I dati possono essere letti e scritti in vari modi (un 
+          carattere alla volta, una linea alla volta, ecc.) ed essere interpretati di conseguenza. \\
+          \textbf{Manipolazione con streams} \par 
+          \texttt{FILE *fopen(const char *filename, const char *mode)} \\
+          Restituisce un FILE pointer per gestire il "filename" nella modalit\aca specificata:
+          \begin{itemize}
+            \item r: read
+            \item w: write
+            \item r+ read adn write 
+            \item w+: read and write, create or overwrite
+            \item a: write at the end
+            \item a+: read and write at the end
+          \end{itemize}
+          \texttt{int fclose(FILE *stream)}: chiusura del file che ritorna un intero con lo stato della chiusura \\
+          \textbf{Lettura del file}:
+          \begin{itemize}
+            \item \texttt{int fgetc(FILE *stream)}: restituisce un carattere dallo stream
+            \item \texttt{char *fgets(char *str, int n, FILE *strem)}: ritorna una stringa da stream e la salva in 
+                    str, si ferma quando sono stati letti n-1 caratteri, o viene letto un "\textbackslash n", oppure raggiunta la fine\\
+                    Inserisce il carattere di terminazione. 
+            \item \texttt{int fscanf(FILE *stream, const char *format)}: legge da stream dei dati, salvando 
+                    ogni dato nelle variabili fornite, seguendo la stringa format 
+            \item \texttt{int feof(FILE *strem)}: restituisce 1 se lo stream \ace arrivato alla fine del file.
+          \end{itemize}
+          \textbf{Scrittura del file}:
+          \begin{itemize}
+            \item \texttt{int fputc(int chr, FILE *stream)}: scrive un singolo carattere char  su stream 
+            \item \texttt{int fputs(const char *str, FILE *stream)}: scrive una stringa str su file 
+            \item \texttt{int fprintf(FILE *stream, const char *format)}:scrive il contenuto di alcune variabili su stream 
+                    seguendo la stringa format
+          \end{itemize}
+          \textbf{Flush e Rewind} \par 
+          Seguendo l'immagine, il contenuto di un file viene letto e scritto con degli streams 
+          (dei buffer) di dati. Come tali, \ace comprensibile come queste operazioni non siano 
+          immediate: i dati vengono scritti sul buffer e solo successivamente scritti sul file. Il 
+          \textbf{flush} \ace l'operazione che trascrive il file dallo stream. Questa operazione avviene 
+          quando: 
+          \begin{itemize}
+            \item Il programma termina con un return dal main o con exit().
+            \item \texttt{fprintf()} inserisce una nuova riga.
+            \item \texttt{int fflush(FILE *stream)} viene invocato.
+            \item \texttt{void rewind(FILE *stream)} viene invocato.
+            \item \texttt{fclose()} viene invocato
+          \end{itemize}
+          \textbf{rewind} consente inoltre di ripristinare la posizione della testina all'inizio del file. \\
+          \begin{flushleft}
+            \textbf{Esempio 1}:\\
+            \texttt{\#include <stdio.h>\\
+            FILE *ptr; //Declare stream file\\
+            ptr = fopen("filename.txt","r+"); //Open\\
+            int id;\\
+            char str1[10], str2[10];\\
+            while (!feof(ptr))\{ //Check end of file\\
+            \tab //Read int, word and word \\
+            \tab fscanf(ptr,"\%d \%s \%s", \&id, str1, str2);\\
+            \tab printf("\%d \%s \%s\textbackslash n",id,str1,str2); \\
+            \}\\
+            printf("End of file\textbackslash n");\\
+            fclose(ptr); //Close file\\
+            }\par 
+            \textbf{Esempio 2}:\\
+            \texttt{\#include <stdio.h>\\
+              \#define N 10\\
+              FILE *ptr;\\
+              ptr = fopen("fileToWrite.txt","w+"); \\
+              fprintf(ptr,"Content to write"); //Write content to file\\
+              rewind(ptr); // Reset pointer to begin of file\\
+              char chAr[N], inC;\\
+              fgets(chAr,N,ptr); // store the next N-1 chars from ptr in chAr\\
+              printf("’\%d’ ‘\%s’",chAr[N-1], chAr);\\
+              do\{\\
+              \tab inC = fgetc(ptr); // return next available char or EOF\\
+              \tab printf("\%c",inC);\\
+              \}while(inC != EOF); \\
+              printf("\textbackslash n");\\
+              fclose(ptr);\\
+            }
+          \end{flushleft}
+    \item \textbf{File descriptor} interfaccia di basso livello costituita dalle system call messe a 
+            disposizione dal kernel. Un file \ace descritto da un semplice intero (\textbf{file descriptor}) che punta alla rispettiva 
+            entry nella file table del sistema operativo. I dati possono essere letti e scritti 
+            soltanto un buffer alla volta di cui spetta al programmatore stabilire la dimensione.\\
+            Un insieme di system call permette di effettuare le operazioni di input e output 
+            mantenendo un controllo maggiore su quanto sta accadendo a prezzo di 
+            un'interfaccia meno amichevole.\par 
+            Per accedere al contenuto di un file bisogna creare un canale di comunicazione con il 
+            kernel, aprendo il file con la system call open la quale localizza l’i-node del file e 
+            aggiorna la file table del processo.\\
+            A ogni processo \ace associata una tabella dei file aperti 
+            di dimensione limitata, dove ogni elemento della 
+            tabella rappresenta un file aperto dal processo ed è 
+            individuato da un indice intero (il "file descriptor")\\
+            I file descriptor 0, 1 e 2 individuano normalmente 
+            standard input (0=stdin), output (1=stdout) ed error (2=stderr) (aperti automaticamente). \\
+            Il kernel gestisce l'accesso ai files attraverso due strutture dati: 
+            \begin{itemize}
+              \item La \textbf{la tabella dei files attivi} che contiene una copia dell'i-node di ogni file 
+                    aperto (per efficienza)
+              \item La \textbf{tabella dei files aperti} che contiene un elemento per ogni file aperto e 
+                    non ancora chiuso\\ Questo elemento contiene:
+                      \begin{itemize}
+                        \item I/O pointer: posizione corrente nel file
+                        \item i-node pointer: Puntatore a inode corrispondente
+                      \end{itemize}
+                    La tabella dei file aperti pu\aco avere pi\acu elementi corrispondenti allo stesso file
+            \end{itemize} 
+          \textbf{Apertura e chiusura file} \\
+          \texttt{int open(const char *pathname, int flags[, mode\_t mode]);}\par 
+          \textbf{flags}: interi che definiscono l'apertura del file:
+          \begin{itemize}
+            \item \textbf{O\_RDONLY, O\_WRONLY, O\_RDWR}: almeno uno \ace obbligatorio
+            \item \textbf{O\_CREAT, O\_EXCL}: crea il file se non esiste, come creat per\aco fallisce se il file esiste gi\aca
+            \item \textbf{O\_APPEND}: apre il file in append
+            \item \textbf{O\_TRUNC}: cancella il contenuto del file (se usato in scrittura)
+          \end{itemize}
+          \textbf{mode}: interi per i privilegi da assegnare al nuovo file, \textbf{ S\_IRUSR, S\_IWUSR, S\_IXUSR, S\_IRWXU, S\_IRGRP, …, S\_IROTH}\par 
+          \texttt{int close(int fd)}\par 
+          \textbf{Lettura e scrittura file}\\
+          \begin{itemize}
+            \item \texttt{ssize\_t read (int fd, void *buf, size\_t count);}\\ legge dal file e salva nel buffer buf, 
+                  fino a count bytes di dati dal file associato con il file descriptor fd
+            \item \texttt{ssize\_t write(int fd, const void *buf, size\_t count);}\\ scrive sul file associato al file descriptor fd fino a count bytes di dati 
+                  dal buffer 'buf'
+            \item \texttt{off\_t lseek(int fd, off\_t offset, int whence);}\\ riposiziona l'offset del file a seconda dell'argomento 
+                    offset partendo da una certa posizione whence. Tre posizioni fondamentali: \textbf{SEEK\_SET} (inizio file), \textbf{SEEK\_CUR} (posizione attuale), 
+                    \textbf{SEEk\_END} (fine file)
+          \end{itemize}          
+          \begin{flushleft}
+            \textbf{Esempio 1}: \\
+            \texttt{\#include <unistd.h> \\
+            \#include <stdio.h>\\
+            \#include <fcntl.h>\\
+            //Open new file in Read only\\
+            int openedFile = open("filename.txt", O\_RDONLY);\\
+            char content[10]; \\
+            int canRead;\\
+            do\{\\
+            \tab //Read 9B to content\\
+            \tab bytesRead = read(openedFile,content,9);\\
+            \tab content[bytesRead]=0;\\
+            \tab printf("\%s",content);\\
+            \} while(bytesRead > 0);\\
+            close(openedFile); }
+          \end{flushleft}
+          \begin{flushleft}
+            \textbf{Esempio 2}:\\
+            \texttt{\#include <unistd.h>\\
+            \#include <fcntl.h>\\
+            \#include <string.h>\\
+            //Open file (create it with user R and W permissions)\\
+            int openFile = open("name.txt", O\_RDWR | O\_CREAT, S\_IRUSR | S\_IWUSR);\\
+            char toWrite[] = "Professor";\\
+            write(openFile, "hello world\textbackslash n", strlen("hello world\textbackslash n")); //Write to file\\
+            lseek(openFile, 6, SEEK\_SET); // move I/O pointer\\
+            write(openFile, toWrite, strlen(toWrite)); //Write to file\\
+            close(openFile); } 
+          \end{flushleft}
+  \end{itemize}
+  \textbf{Canali standard}
+  \begin{itemize}
+    \item I canali standard (in/err/out), sono rappresentati con strutture stream (stdin, stderr, stdout) e macro 
+          (STDIN\_FILENO, STDERR\_FILENO, STDOUT\_FILENO)
+    \item La funzione \texttt{fileno} restituisce l'indice di uno stream per cui:
+          \begin{itemize}
+            \item \texttt{fileno(stdin) = STDIN\_FILENO} ( = 0)
+            \item \texttt{fileno(stdout) = STDOUT\_FILENO} (= 1)
+            \item \texttt{fileno(stderr) = STDERR\_FILENO} (= 2)
+          \end{itemize}
+    \item \texttt{isatty(stdin) == 1} con esecuzione interattiva, 0 altrimenti 
+    \item \texttt{printf("ciao") $\equiv$ fprintf(stdout, "ciao")}
+    \item \textbf{Esempio} \\
+          \begin{flushleft}
+            \texttt{\#include <stdio.h>\\
+            \#include <unistd.h>\\
+            void main() \{ \\
+             \tab printf("stdin: stdin ->\_flags = \%hd, STDIN\_FILENO = \\
+             \tab \halftab \%d\textbackslash n", stdin->\_flags, STDIN\_FILENO\\
+             \tab ); \\
+             \tab printf("stdout: stdout->\_flags = \%hd, STDOUT\_FILENO =\\
+             \tab \halftab \%d\textbackslash n",stdout->\_flags, STDOUT\_FILENO \\
+             \tab ); \\
+             \tab printf("stderr: stderr->\_flags = \%hd, STDOUT\_FILENO = \\
+             \tab \halftab \%d\textbackslash n", stderr->\_flags, STDERR\_FILENO\\
+             \tab ); \\
+             \} }
+          \end{flushleft}
+  \end{itemize}
+  \textbf{Piping con bash}
+  \begin{flushleft}
+    Normalmente un'applicazione eseguita da ash ha accesso ai canali standard, se le applicazioni sono usate 
+    in un'operazione di piping (\texttt{ls | wc -l}) allora l'output  dell'applicazione 
+    sulla sinistra diventa l'input dell'applicazione sulla destra e verranno eseguite \textbf{parallelamente} \par 
+    \textbf{Esempio}: \\
+    \begin{flushleft}
+      \texttt{gcc src.c -o pip.out \\
+              echo "hi how are you" | ./pip.out}\\
+      \textit{src.c} \\
+      \texttt{\#define MAXBUF 10\\
+      \#include <stdio.h>\\
+      \#include <string.h>\\
+      int main() \{ \\
+       \halftab char buf[MAXBUF]; \\
+       \halftab fgets(buf, sizeof(buf), stdin); // may truncate!\\
+       \halftab printf("\%s\textbackslash n", buf); \\
+       \halftab return 0; \\
+      \} }
+    \end{flushleft}
+    \begin{flushleft}
+      \texttt{ls /tmp | ./inv.out} \par 
+      \textit{Code}: \\
+      \texttt{\#include <stdio.h>\\
+      int main() \{ \\
+       \halftab int c, d; \\
+       \halftab // loop into stdin until EOF (as CTRL+D) \\
+       \halftab // read from stdin \\
+       \halftab while ((c = getchar()) != EOF) \{ \\
+       \tab d = c; \\
+       \tab if (c >= 'a' \&\& c <= 'z') d -= 32; \\
+       \tab if (c >= 'A' \&\& c <= 'Z') d += 32; \\
+       \tab putchar(d); // write to stdout \\
+       \halftab \}; \\
+       \halftab return (0); \\
+      \} }
+    \end{flushleft}
+  \end{flushleft}
+\end{flushleft}

@@ -1,0 +1,33 @@
+\section{Lab-05}
+\begin{flushleft}
+  \textbf{Architettura}\\
+  \begin{flushleft}
+    \textbf{Kernel Unix}: il kernel \ace l'elemento di base di un sistema Unix-like, ovvero il nucleo 
+    del sistema operativo. Il kernel \ace incaricato della gestione delle risorse essenziali (CPU, mem, periferiche) \\
+    Ad ogni boot il sistema verifica lo stato delle periferiche, monta la prima partizione (roo file system) in read-only e 
+    carica il kernel in memoria. \\ Il kernel lancia il primo programma (systemd) che a seconda 
+    della configurazione voluta, ilizializza il sistema di conseguenza \\
+    Il resto delle operazioni, tra cui l'interazione con l'utente, vengono gestite con programmi eseguiti dal kernel \par 
+    \textbf{Kernel \& Mem Virtuale} \par 
+    I programmi utilizzati dall'utente che vogliono accedere alle periferiche chedono al kernel di farlo per loro \\
+    L'interazione tra programmi ed il resto del sistema viene mascherata da alcune caratteristiche intrinseche ai processori, come 
+    la gestione del HW e della MemVirtuale \\
+    Ogni programma vede se stesso come \textbf{unico processore della CPU} e npn gli \ace 
+    dunque possibile disturbare l'azione degli altri programmi, $\Rightarrow$ stabilit\aca sistemi Unix \par 
+    \textbf{Privilegi} \par 
+    Nei sistemi Unix-like ci sono due livelli di privilegi:
+    \begin{itemize}
+      \item \textbf{User space}: ambiente in cui vengono eseguiti i programmi
+      \item \textbf{Kernel space}: ambiente in cui viene eseguito il kernel
+    \end{itemize}
+  \end{flushleft}
+  \begin{flushleft}
+    \textbf{System calls} \par 
+    Le interfacce con cui i programmi accedono al hw si chiamano \textbf{system calls}, cio\ace chiamate al sistema 
+    che il kernel esegue nel \textbf{kernel space} retituendo i risultati al programma chiamante nello user space \\
+    Le chiamate restituiscono -1 in caso di errore e settano la varaibile globale \texttt{errno}. Errori validi sono numeri 
+    positivi e seguono lo standard POSIX, che definisce gli alias \par 
+    \textbf{Librerie di sistema} \par 
+    Utilizzando il comando di shell \texttt{ldd} su di un eseguibile si possono visualizzare
+  \end{flushleft}
+\end{flushleft}

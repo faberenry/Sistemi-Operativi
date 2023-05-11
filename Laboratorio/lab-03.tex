@@ -1,0 +1,217 @@
+\section{Lab-03}
+\begin{flushleft}
+  \textbf{C Fundamentals}\par 
+  \begin{itemize}
+    \item \textbf{Tipi e Casting}\par 
+          C \ace un linguaggio debolmente e tipizzato che utilizza 8 tipi 
+          fondamentali. \ac{E} possibile fare il casting tra tipi 
+          differenti: 
+          \begin{flushleft}
+            \texttt{float a = 3.5; \\
+                    int b = (int)a}
+          \end{flushleft}
+          La grandezza delle variabili \ace dipendente dall'
+          architettura di riferimento i valori massimi per ogni 
+          tipo cambiano a seconda se la variabile \ace signed o unsigned.
+          $$\begin{array}{l|l}
+            void = 0 byte & float = 4 bytes \\
+            char = 1 byte & long = 8 bytes\\
+            short = 2 bytes & double = 8 bytes \\
+            int = 4 bytes & long double = 16 bytes \\
+          \end{array}$$
+    \item \textbf{sizeof}: Si tratta di un operatore che elabora il tipo passato come argomento (tra parentesi) o 
+    quello dell’espressione e restituisce il numero di bytes occupati in memoria
+    \item \textbf{Puntatori}\\
+          C si evolve attorno all'uso di puntatori, ovvero degli 
+          alias per zone di memorie condivise tra diverse 
+          variabili/funzioni. L'uso di puntatori \ace abilitato da 
+          due operatori: * ed \&.
+          \begin{itemize}
+            \item \textbf{Variabili}:\\
+                  *: ha significati diversi a seconda se usato in una dichiarazione 
+                  o in una assegnazione\\
+                  \texttt{int *pointer; // crea un puntatore ad intero \\
+                          int valore = *(pointer) // ottiene un valore puntato}\\
+                  \&: ottiene l'indirizzo di memoria in cui \ace collocata 
+                  una certa variabile.\\    
+                  \texttt{long whereIsValore = \&valore}              
+            \item \textbf{Funzioni}: C consente anche di creare dei puntatori a delle 
+                  funzioni: puntatori che possono contenere l'indirizzo di funzioni differenti\\
+                  \texttt{float (*punt)(float,float)}\\
+                  \texttt{ret\_type (*ptnName)(argType, argType,....)}
+          \end{itemize}
+    \item \textbf{main.c}\par 
+          A parte in casi particolari l'applicazione deve avere una funzione "main" che 
+          \ace utilizzata come punto di ingresso, il valore di ritorno \ace un int che rappresenta 
+          il codice di uscita dell'applicazione (0 se omesso). \\
+          Quando viene invocata riceve in input il numero di argomenti, \texttt{int argc}, in cui \ace incluso 
+          il nome dell'eseguibile e la lista degli argomenti, \texttt{char * argv[]}, come vettore 
+          di stringhe (vettore di vettori di caratteri)\\
+          \textbf{Esempio}: 
+          \begin{flushleft}
+            \texttt{gcc main.c -o main.o \\
+                    ./main.o arg1 arg2}\\
+                    In questo esempio il valore di argc = 3, e argv \ace della 
+                    forma "0--./main.o; 1-- arg1; 2-- arg2"
+          \end{flushleft}
+    \item \textbf{printf/fprintf} \\
+          \begin{flushleft}
+            \texttt{int printf(const char *format, ...)\\
+            int fprintf(FILE *stream, const char *format, ...)}
+          \end{flushleft}
+          Inviano dati sul canale stdout (printf) o su quello specificato (fprintf) secondo il formato 
+          indicato.
+          Il formato è una stringa contenente contenuti stampabili (testo, a capo, …) ed eventuali 
+          segnaposto identificabili dal formato generale:
+          \begin{flushleft}
+            \texttt{\%[flags][width][.precision][length]specifier}
+          \end{flushleft}
+          \textbf{Esempio}: \%d (intero con segno), \%c (carattere), \%s (stringa), \dots\\
+          Ad ogni segnaposto deve corrispondere un ulteriore argomento del tipo corretto
+    \item \textbf{Direttive}\par 
+          Il compilatore, nella fase di preprocessing, elabora tutte le direttive presenti nel 
+          sorgente. Ogni direttiva viene introdotta con "\#" e può essere di vari tipi:
+          $$\begin{array}{l|l}
+            \texttt{\#include <lib>} & \textit{copia il contenuto del file lib nel file corrente}\\
+            \hline 
+            \texttt{\#include "lib"} & \textit{come sopra ma cerca prima nella cartella corrente}\\
+            \hline
+            \texttt{\#define VAR VAL} & \textit{crea una costante VAR con il contenuto VAL}\\
+              &\textit{e sostituisce ogni occorrenza di VAR con VAL}\\
+              \hline 
+            \texttt{\#define MUL(A,B) A*B} & \textit{dichiara una funzione con parametri A e B,}\\
+            &\textit{ queste funzioni hanno una sintassi limitata}\\
+            \hline 
+            \texttt{\#ifdef, \#ifndef, \#if,}& \textit{rende l'inclusione di parte di codice }\\
+            \texttt{\#else, \#endif} & \textit{dipendente da una condizione}\\
+          \end{array}$$
+          Macro possono essere passate a GCC con -D NAME=VALUE \\
+          \textbf{Esempio}: 
+          \begin{flushleft}
+            \texttt{\#include <stdio.h>\\
+                    \#define ITER 5\\
+                    \#define POW(A) A*A\\
+                    int main(int argc, char **argv) \{ \\
+                    \#ifdef DEBUG \\
+                    \tab printf("\%d\textbackslash n, argc");\\
+                    \tab printf("\%s\textbackslash n", argv[0]);\\
+                    \#endif\\
+                    \tab int res = 1;\\
+                    \tab for (int i = 0; i < ITER; i++)\{ \\
+                      \tab \tab res *= POW(argc);\\
+                    \tab \} \\
+                    \tab return res;\\
+                    \} \\
+            }
+            \texttt{gcc main.c -o main.out -D DEBUG=0\\
+            gcc main.c -o main.out -D DEBUG=1\\
+            ./main.out 1 2 3 4\\}
+            Danno lo stesso risultato 
+          \end{flushleft}
+          \begin{flushleft}
+            \texttt{\#include <stdlib.h>\\
+            \#include <stdio.h>\\
+            \#define DIVIDENDO 3\\
+            int division(int var1, int var2, int * result)\{ \\
+            \tab *result = var1/var2;\\
+            \tab return 0;\\
+            \} \\
+            int main(int argc, char * argv[])\{ \\
+            \tab float var1 = atof(argv[1]);\\
+            \tab float result = 0;\\
+            \tab division((int)var1,DIVIDENDO,(int *)\&result);\\
+            \tab printf("\%d \textbackslash n",(int)result);\\
+            \tab return 0;\\
+            \} \\}
+          \end{flushleft}
+    \item \textbf{Librerie standard}: \par 
+          Librerie possono essere usate attraverso la direttiva \#include.
+          Tra le più importanti vi sono:
+          \begin{itemize}
+            \item stdio.h: FILE, EOF, stderr, stdout, stdin, \dots 
+            \item stdlib.h: atof(),atoi(),\dots
+            \item string.h: memset(), memcpy(), strncat(), \dots 
+            \item math.h: sqrt(), sin(), cos(),\dots 
+            \item unistd.h: read(), write(), fork(), \dots 
+            \item fcntl.h: creat(), open(), \dots 
+          \end{itemize}
+    \item \textbf{Struct e Unions}: Structs permettono di aggregare diverse variabili, mentre le unions permettono di 
+          creare dei tipi generici che possono ospitare uno di vari tipi specificati.\\
+          \textbf{Esempio:}\\
+            \texttt{struct Books \{ \\
+            \tab char author[50]; \\
+            \tab char title[50]; \\
+            \tab int bookID; \\
+            \} book1, book2; } \\
+            \texttt{union Result\{ \\
+              \tab int intero;\\
+              \tab float decimale;\\
+              \} result1, result2; } 
+    \item \textbf{Typedef}: consente la definizione di nuovi tipi di variabili o funzioni
+            \textbf{Esempio}:
+            \begin{flushleft}
+              \texttt{typedef unsigned int intero; \\
+                typedef struct Books\{ \\
+                \dots \\
+                \} bookType; \\
+                intero var = 22; //= unsigned int var = 22; \\
+                bookType book1; //= struct Books book1;\\
+              } 
+            \end{flushleft}
+    \item \textbf{Exit}: \texttt{void exit(int status)}\\
+          Il processo \ace terminato restituendo il valore status come codice di uscita. Si ottiene 
+          lo stesso effetto se all'interno della funzione main si ha return status.
+          La funzione non ha un valore di ritorno proprio perch\ace non sono eseguite ulteriori 
+          istruzioni dopo di essa.\\
+          Il processo chiamante \ace informato della terminazione tramite un segnale apposito. 
+    \item \textbf{Vettori e Stringhe} \par 
+          \begin{itemize}
+            \item \textbf{Vettori}: \par I vettori sono sequenze di elementi omogenei (tipicamente liste di dati dello stesso 
+            tipo, ad esempio liste di interi o di caratteri), si realizzano con un puntatore al primo elemento della lista.\\
+            \textbf{Esempio}: Con int arr[4] = \{2, 0, 2, 1\} si dichiara un vettore di 4 interi 
+            inizializzandolo: sono riservate 4 aree di memoria consecutive di dimensione pari a 
+            quella richiesta per ogni singolo intero (tipicamente 2 bytes, quindi 4*2=8 in tutto) \\ 
+            \textbf{Esempio}: \texttt{char str[7] = \{'c', 'i', 'a', 'o', 56,57,0\}} : 7*1 = 7 bytes\\
+            str \ace dunque un puntatore a char (al primo elemento) e si ha che: \\
+            \texttt{str[n] corrisponde a *(str+n)}\\
+            e in particolare \\
+            \texttt{str[0] corrisponde a *(str+0)=*(str)=*str}\\
+            \item \textbf{Stringhe}:\par 
+            Le stringhe in C sono vettori di caratteri, ossia puntatori a sequenze di bytes, la cui 
+            terminazione \ace definita dal valore convenzionale 0 (zero).\\
+            Un carattere tra apici singoli equivale all'intero del codice corrispondente. \\
+            In particolare un vettore di stringhe \ace un vettore di vettore di caratteri e dunque:
+           \begin{flushleft}
+              \texttt{char c; carattere} \\
+              \texttt{char * str; vettore di a caratteri o stringa}  \\
+              \texttt{char **strarr; vettore di vettore di caratteri o vettore di stringhe} \\
+           \end{flushleft}
+            Si comprende quindi la segnatura della funzione main con **argv. \\
+            C supporta l'uso di stringhe che, tuttavia, corrispondono a degli array di caratteri.\\
+            Gli array sono generalmente di dimensione statica e non possono essere ingranditi 
+            durante l'esecuzione del programma. Per array dinamici dovranno essere usati 
+            costrutti particolari (come malloc). \\
+            Le stringhe, quando acquisite in input o dichiarate con la sintassi "stringa", 
+            terminano con il carattere '\textbackslash 0' e sono dunque di grandezza \texttt{str\_len+1} \\
+            Sebbene ci siano diversi modi per dichiarare ed inizializzare una stringa, questi hanno comportamenti diversi:
+            \begin{flushleft}
+              \texttt{char string[] = “ciao”; // writable string in the stack \\
+              char * string2 = “ciao; // READ-ONLY string \\
+              string[2] = ‘a’;\\
+              string2[2] = ‘a’; //Segmentation fault! \\}
+            \end{flushleft}
+            Dato che le stringhe sono riferite con un puntatore al primo carattere non ha senso 
+            fare assegnamenti e confronti diretti, ma si devono usare delle funzioni. La libreria 
+            standard string.h ne definisce alcune come ad esempio:
+            \begin{itemize}
+              \item \texttt{char * strcat(char *dest, const char *src)}: aggiunge src in coda a dest
+              \item \texttt{char * strchr(const char *str, int c)}: cerca la prima occorrenza di c in str
+              \item \texttt{int strcmp(const char *str1, const char *str2)}: confronta str1 con str2
+              \item \texttt{size\_t\ strlen(const char *str)}: calcola la lunghezza di str
+              \item \texttt{char * strcpy(char *dest, const char *src)}: copia la stringa src in dst
+              \item \texttt{char * strncpy(char *dest, const char *src, size\_t n)}: copia n caratteri 
+                    dalla stringa src in dst
+            \end{itemize}
+          \end{itemize}
+  \end{itemize}
+\end{flushleft}
