@@ -1,0 +1,192 @@
+\section{Lab-07}
+\begin{flushleft}
+  \textbf{Errori in C} \par 
+  Durante l'esecuzione di un programma ci possono essere diversi tipi di errori: system 
+  calls che falliscono, divisioni per zero, problemi di memoria \dots \par
+  Alcuni di questi errori non fatali, come una system call che fallisce, possono essere 
+  indagati attraverso la variabile \texttt{errno}. Questa variabile globale contiene l’ultimo 
+  codice di errore generato dal sistema. \par 
+  Per convertire il codice di errore in una stringa comprensibile si pu\aco usare la 
+  funzione \texttt{char *strerror(int errnum)}. \\
+  In alternativa, la funzione \texttt{void perror(const char *str)} che stampa su 
+  \textbf{stderr} la stringa passatagli come argomento concatenata, tramite ': ', con 
+  strerror(errno). 
+  \begin{flushleft}
+    Esempio: \par 
+    \texttt{\#include <stdio.h> <errno.h> <string.h> \\
+            extern int errno; // declare external global variable\\
+            int main(void)\{\\
+            \halftab FILE * pf;\\
+            \halftab pf = fopen ("nonExistingFile.boh", "rb"); //Try to open file\\
+            \halftab if (pf == NULL) \{ //something went wrong!\\
+            \tab fprintf(stderr, "errno = \%d\n", errno); \\
+            \tab perror("Error printed by perror");\\
+            \tab fprintf(stderr,"Strerror: \%s\n", strerror(errno));\\
+            \halftab \} else \{\\
+            \tab fclose (pf);\\
+            \halftab \} \\
+            \}}
+  \end{flushleft}
+  \begin{flushleft}
+    Esempio: \\
+    \texttt{\#include <stdio.h> <errno.h> <string.h> <signal.h>\\
+            extern int errno; // declare external global variable\\
+            int main(void)\{ \\
+            \halftab int sys = kill(3443,SIGUSR1); //Send signal to non exist proc\\
+            \halftab if (sys == -1) \{ //something went wrong!\\
+            \tab fprintf(stderr, "errno = \%d\n", errno); \\
+            \tab perror("Error printed by perror");\\
+            \tab fprintf(stderr,"Strerror: \%s\n", strerror(errno));\\
+            \halftab \} else \{\\
+            \tab printf("Signal sent\n");\\
+            \halftab \}\\
+            \}}
+  \end{flushleft}
+\end{flushleft}
+\subsection{Gruppi}
+\begin{flushleft}
+  \textbf{Process groups} \par 
+  All'interno di Unix i processi vengono raggruppati secondi vari criteri, dando vita a 
+  sessioni, gruppi e threads\\
+  \textbf{Perch\ace i gruppi:} I process groups consentono una migliore gestione dei segnali e della comunicazione 
+  tra i processi.\\
+  Un processo, per l'appunto, pu\aco:
+  \begin{itemize}
+    \item Aspettare che tutti i processi figli appartenenti ad un determinato gruppo
+    terminino;\par
+    \texttt{waitpid(-33,NULL,0); // Wait for a children in group 33}
+    \item Mandare un segnale a tutti i processi appartenenti ad un determinato gruppo\\
+    \texttt{kill(-45,SIGTERM); // Send SIGTERM to all children in grp 45}
+  \end{itemize}
+  L'organizzazione dei processi in gruppi consente di organizzare meglio le 
+  comunicazione e di coordinare le operazioni avendo in particolare la possibilit\aca di 
+  inviare dei segnali ai gruppi nel loro complesso.
+  \begin{flushleft}
+    \textbf{Gruppi in Unix}\\
+    Mentre, generalmente, una sessione \ace collegata ad un terminale, i processi vengono 
+    raggruppati nel seguente modo:
+    \begin{itemize}
+      \item In bash, processi concatenati tramite pipes appartengono allo stesso gruppo: \\
+            \texttt{cat /tmp/ciao.txt | wc -l | grep '2'}
+      \item Alla loro creazione, i figli di un processo ereditano il gruppo del padre
+      \item Inizialmente, tutti i processi appartengono al gruppo di 'init', ed ogni processo 
+            pu\aco cambiare il suo gruppo in qualunque momento.  
+    \end{itemize}
+    Il processo il cui PID \ace uguale al proprio \textbf{GID} \ace detto \textbf{process group leader}
+  \end{flushleft}
+  \begin{flushleft}
+    \textbf{Group system calls}\\
+    \begin{flushleft}
+      \texttt{int setpgid(pid\_t pid, pid\_t pgid); //set GID of proc. (0=self)\\
+              pid\_t getpgid(pid\_t pid); // get GID of process (0=self) }      
+    \end{flushleft}
+    \begin{flushleft}
+      Esempio: \\
+      \texttt{\#include <stdio.h> <unistd.h> <sys/wait.h> \\
+      int main(void)\{ \\
+      \halftab int isChild = !fork(); //new child\\
+      \halftab printf("PID \%d PPID: \%d GID \%d\n", \\
+                      \tab \tab getpid(),getppid(),getpgid(0));\\
+      \halftab if(isChild)\{ \\
+      \halftab isChild = !fork(); //new child\\
+      \halftab if(!isChild) setpgid(0,0); // Become group leader\\
+      \tab sleep(1);\\
+      \tab fork(); //new child\\
+      \tab printf("PID \%d PPID: \%d GID \%d\n",\\
+                  \halftab \tab \tab getpid(),getppid(),getpgid(0));\\
+      \halftab \}; \\ 
+      \halftab while(wait(NULL)>0);\\
+      \}}
+    \end{flushleft}
+    \subsection{Segnnali ai gruppi}
+    \begin{flushleft}
+      \textbf{Mandare segnali ai gruppi} \par 
+      Nel prossimo esempio:
+      \begin{enumerate}
+        \item Processo ‘ancestor’ crea un figlio
+        \begin{enumerate}
+          \item Il figlio cambia il proprio gruppo e genera 3 figli (Gruppo1)
+          \item I 4 processi aspettano fino all'arrivo di un segnale
+        \end{enumerate}
+        \item Processo ‘ancestor’ crea un secondo figlio
+        \begin{enumerate}
+          \item Il figlio cambia il proprio gruppo e genera 3 figli (Gruppo2)
+          \item I 4 processi aspettano fino all’arrivo di un segnale
+        \end{enumerate}
+        \item Processo ‘ancestor’ manda due segnali diversi ai due gruppi
+      \end{enumerate}
+      \texttt{\#include <stdio.h><unistd.h><sys/wait.h><signal.h><stdlib.h>\\
+      void handler(int signo)\{\\
+      \halftab printf("[\%d,\%d] sig\%d received\n",getpid(),getpgid(0),signo); \\
+      \halftab sleep(1); exit(0);\\
+      \}\\
+      int main(void)\{ \\
+      \halftab signal(SIGUSR1,handler);\\
+      \halftab signal(SIGUSR2,handler);\\
+      \halftab int ancestor = getpid(); int group1 = fork(); int group2; \\
+      \halftab if(getpid()!=ancestor )\{ // First child \\
+      \tab setpgid(0,getpid()); // Become group leader\\
+      \tab fork();fork(); //Generated 3 children in new group\\
+      \halftab \}else \{ \\
+      \tab group2 = fork();\\
+      \tab if(getpid()!=ancestor)\{ // Second child\\
+      \tab \halftab setpgid(0,getpid()); // Become group leader\\
+      \tab \halftab fork();fork();\\ 
+      \tab \}\\
+      \halftab \} //Generated 3 children in new group\\
+      \halftab if(getpid()==ancestor)\{\\
+      \tab printf("[\%d]Ancestor and I'll send signals\n",getpid());\\
+      \tab sleep(1);\\
+      \tab kill(-group2,SIGUSR2); //Send SIGUSR2 to group2\\
+      \tab kill(-group1,SIGUSR1); //Send SIGUSR1 to group1\\
+      \halftab \}else\{\\
+      \tab printf("[\%d,\%d]chld waiting signal\n", getpid(),getpgid(0));\\
+      \tab while(1);\\
+      \halftab \} \\
+      \halftab while(wait(NULL)>0);\\
+      \halftab printf("All children terminated\n");\\
+      \}}
+    \end{flushleft}
+    \begin{flushleft}
+      \textbf{Wait figli in un gruppo}\par 
+      Nel prossimo esempio:
+      \begin{enumerate}
+        \item 1. Processo ‘ancestor’ crea un figlio
+        \begin{enumerate}
+          \item Il figlio cambia il proprio gruppo e genera 3 figli (Gruppo1)
+          \item I 4 processi aspettano 2 secondi e terminano
+        \end{enumerate}
+        \item Processo ‘ancestor’ crea un secondo figlio
+        \begin{enumerate}
+          \item Il figlio cambia il proprio gruppo e genera 3 figli (Gruppo2)
+          \item I 4 processi aspettano 4 secondi e terminano
+        \end{enumerate}
+        \item Processo ‘ancestor’ aspetta la terminazione dei figli del gruppo1
+        \item Processo ‘ancestor’ aspetta la terminazione dei figli del gruppo2
+      \end{enumerate}
+      \texttt{\#include <stdio.h><unistd.h><sys/wait.h> \\
+      int main(void)\{\\
+      \halftab int group1 = fork(); \\
+      \halftab int group2;\\
+      \halftab if(group1 == 0)\{ // First child\\
+      \tab setpgid(0,getpid()); // Become group leader\\
+      \tab fork(); fork(); //Generated 4 children in new group\\
+      \tab sleep(2); return; //Wait 2 sec and exit\\
+      \halftab \}else\{\\
+      \tab group2 = fork();\\
+      \tab if(group2 == 0)\{\\
+      \tab \halftab setpgid(0,getpid()); // Become group leader\\
+      \tab \halftab fork(); fork(); //Generated 4 children\\
+      \tab \halftab sleep(4); return; //Wait 4 sec and exit\\
+      \tab \}\\
+      \halftab \}\\
+      \halftab sleep(1); //make sure the children changed their group\\
+      \halftab while(waitpid(-group1,NULL,0)>0);\\
+      \halftab printf("Children in \%d terminated\n",group1);\\
+      \halftab while(waitpid(-group2,NULL,0)>0);\\
+      \halftab printf("Children in \%d terminated\n",group2);\\
+      \} \\
+      }
+    \end{flushleft}
+  \end{flushleft}
+\end{flushleft}

@@ -1,4 +1,4 @@
-\section{Lab-01}
+\section{Lab-01: Bash/Terminale}
 \begin{flushleft}
   \textbf{Terminale:} \ace l'ambiente testuale di interazione con il sistema operativo. \par Tipicamente usato come
   applicazione all'interno dell'ambiente grafico ed \ace possibile avviarne pi\acu istanze, \ace anche disponibile all'avvio. 
@@ -31,6 +31,7 @@
     \item Standard error (tipicamente il video), canale 2, detto \textit{stderr}
   \end{itemize}
 \end{flushleft}
+\subsection{Struttura comandi}
 \begin{flushleft}
   \textbf{Struttura generale comandi}: Solitamente un comando \ace identificato da una parola chiave cui possono seguire uno o 
     più "argomenti" opzionali o obbligatori, accompagnati da un valore di riferimento o 
@@ -117,6 +118,7 @@
   il codice di ritorno), esempio:\\
   $type command 1>dev/null 2>\&1$ (per sapere se command esiste)
 \end{flushleft}
+\subsection{Ambiente e variabili}
 \begin{flushleft}
   \textbf{Ambiente e variabili}\par 
   \begin{itemize}
@@ -146,6 +148,7 @@
     \item HOME: contiene la cartella principale all'utente corrente
   \end{itemize}
 \end{flushleft}
+\subsection{Esecuzione comandi}
 \begin{flushleft}
   \textbf{Esecuzione comandi e \$PATH}\par
   Quando si immette un comando (o una sequenza di comandi) la shell analizza 
@@ -234,6 +237,7 @@
           \end{itemize}
   \end{enumerate}
 \end{flushleft}
+\subsection{Utilizzo}
 \begin{flushleft}
   \textbf{Espansione Aritmetica}\par 
   La sintassi base per una subshell \ace da non confondere con l'espansione aritmetica 
@@ -296,6 +300,7 @@
   \textbf{Negazione}
   Il carattere ! viene usato per negare i confronti
 \end{flushleft}
+\subsection{Script bash}
 \begin{flushleft}
   \textbf{Script/Bash} \par 
   \ac{E} possibile raccogliere sequenze di comandi in un file di testo che pu\aco poi 

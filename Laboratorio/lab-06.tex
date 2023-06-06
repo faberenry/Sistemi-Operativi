@@ -1,0 +1,393 @@
+\section{Lab-06: Segnali}
+\begin{flushleft}
+  \textbf{Segnali}\par 
+  Ci sono vari eventi che possono avvenire in maniera asincrona al normale flusso di un 
+  programma, alcuni dei quali in maniera inaspettata e non predicibile. \\ 
+  Per esempio, durante l'esecuzione di un programma ci pu\aco essere una richiesta di terminazione o 
+  di sospensione da parte di un utente, la terminazione di un processo figlio o un errore 
+  generico.\par 
+  Unix prevede la gestione di questi eventi attraverso i \textbf{segnali}: quando il sistema 
+  operativo si accorge di un certo evento, genera un segnale da mandare al processo 
+  interessato il quale potr\aca decidere (nella maggior parte dei casi) come comportarsi.\par
+  Il numero dei segnali disponibili cambia a seconda del sistema operativo, con Linux 
+  che ne definisce 32. Ad ogni segnale corrisponde sia un valore numerico che 
+  un’etichetta mnemonica (definita nella libraria "signal.h") nel formato \texttt{SIGXXX}
+  \begin{center}
+    $$\begin{array}{l|l}
+      SIGALRM (\textit{alarm clock}) & SIGQUIT (\textit{terminal quit})\\
+      SIGCHLD (\textit{child terminated}) & SIGSTOP (\textit{stop})\\
+      SIGCONT (\textit{continue, if stopped}) & SIGTERM (\textit{termination}) \\
+      SIGINT (\textit{terminal interrupt/CTRL + C }) & SIGUSR1 (\textit{user signal}) \\
+      SIGKILL (\textit{kill process}) & SIGUSR2 (\textit{user signal}) \\
+    \end{array}$$
+  \end{center}
+  Per ogni processo, all'interno della process table, vengono mantenute due liste:
+  \begin{itemize}
+    \item \textbf{Pending signals}: segnali emessi dal kernel e che il processo deve ancora gestire.
+    \item \textbf{Blocked signals}: segnali che non devono essere comunicati al processo. 
+          Chiamata anche con il termine \textbf{signal mask}, maschera dei segnali.
+  \end{itemize}
+  Ad ogni schedulazione del processo le due liste vengono controllate per consentire al 
+  processo di reagire nella maniera pi\acu adeguata\par 
+  \begin{flushleft}
+    \textbf{Gestione}\\
+    I segnali sono anche detti "software interrupts" perch\ace sono, a tutti gli effetti, delle 
+    interruzioni del normale flusso del processo generate dal sistema operativo (invece 
+    che dall'hardware, come per gli hardware interrupts).\\
+    Come per gli interrupts, il programma pu\aco decidere come gestire l'arrivo di un 
+    segnale (presente nella lista pending):
+    \begin{itemize}
+      \item Eseguendo l'azione default
+      \item Ignorandolo (non sempre possibile) $\Rightarrow$ programma prosegue normalmente.
+      \item Eseguendo un handler personalizzato $\Rightarrow$ programma si interrompe.
+    \end{itemize}
+    NB: nella pratica, il programma comunica al kernel come vuole che il segnale venga 
+    gestito, ed \ace poi il kernel che richiamer\aca la funzione adeguata del programma
+  \end{flushleft}
+  \begin{flushleft}
+    \textbf{Default handler}\\
+    Ogni segnale ha un suo handler di default che tipicamente pu\aco:
+    \begin{itemize}
+      \item Ignorare il segnale
+      \item Terminare il processo
+      \item Continuare l'esecuzione (se il processo era in stop)
+      \item Stoppare il processo
+    \end{itemize}
+    Ogni processo pu\aco sostituire il gestore di default con una funzione "custom" (a parte 
+    per SIGKILL e SIGSTOP) e comportarsi di conseguenza. La sostituzione avviene 
+    tramite la system call signal() (definita in "signal.h").
+  \end{flushleft}
+  \begin{flushleft}
+    \textbf{signal()}\par 
+    \texttt{sighandler\_t signal(int signum, sighandler\_t handler);}\\
+    Imposta un nuovo signal handler handler per il segnale signum. Restituisce il 
+    signal handler precedente. Quello nuovo può essere:
+    \begin{itemize}
+      \item SIG\_DFL: handler di default
+      \item SIG\_IGN: ignora il segnale
+      \item \texttt{typedef void (*sighandler\_t)(int)}: custom handler
+    \end{itemize}
+    Esempio: \\
+    \texttt{\#include <signal.h> <stdio.h> <stdlib.h>\\
+    void main()\{\\
+    \halftab signal(SIGINT,SIG\_IGN); //Ignore signal\\
+    \halftab signal(SIGCHLD,SIG\_DFL); //Use default handler\\
+    \}}
+  \end{flushleft}
+  \subsection{Handler custom}
+  \begin{flushleft}
+    \textbf{Custom handler}\par 
+    Un custom handler \textbf{deve} essere una funzione di tipo void che accetta come 
+    argomento un int rappresentante il segnale catturato. Questo consente allo stesso 
+    handlers di gestire segnali diversi.\par 
+    \texttt{void myHandler(int par)}\par 
+    Esempio: \\
+    \texttt{\#include <signal.h> <stdio.h> \\
+    void myHandler(int sigNum)\{\\
+    \halftab if(sigNum == SIGINT) printf("CTRL+C\n");\\
+    \halftab else if(sigNum == SIGTSTP) printf("CTRL+Z\n");\\
+    \} \\
+    signal(SIGINT,myHandler); \\
+    signal(SIGTSTP,myHandler);\\}
+  \end{flushleft}
+  \begin{flushleft}
+    \textbf{signal() return}\par 
+    signal() restituisce un riferimento all’handler che era precedentemente assegnato al 
+    segnale: 
+    \begin{itemize}
+      \item NULL: handler precedente era l'handler di default
+      \item 1: l'handler precedente era SIG\_IGN
+      \item $<address>$: l'handler precedente era *(address)
+    \end{itemize}
+    Esempio: \\
+    \texttt{\#include <signal.h> <stdio.h> \\
+    void myHandler(int sigNum)\{\}\\
+    int main()\{\\
+    \halftab printf("DFL: \%p\n",signal(SIGINT,SIG\_IGN));\\
+    \halftab printf("IGN: \%p\n",signal(SIGINT,myHandler));\\
+    \halftab printf("Custom:\%p == \%p\n",signal(SIGINT,SIG\_DFL),myHandler);\\
+    \}}
+  \end{flushleft}
+  \begin{flushleft}
+    \begin{tabular}{lll}
+      SIGXXX & description & default\\
+      SIGALRM & (alarm clock) & quit\\
+      SIGCHLD & (child terminated) & ignore\\
+      SIGCONT & (continue, if stopped) & ignore\\
+      SIGINT & (terminal interrupt, CTRL + C)& quit\\
+      SIGKILL & (kill process) &quit\\
+      SIGSYS & (bad argument to syscall) & quit with dump\\
+      SIGTERM & (software termination) & quit\\
+      SIGUSR1/2 & (user signal 1/2) & quit\\
+      SIGSTOP & (stopped) & quit\\
+      SIGTSTP & (terminal stop, CTRL + Z) & quit\\
+    \end{tabular}
+  \end{flushleft}
+  \begin{flushleft}
+    \textbf{Esempio}\\
+    \texttt{\#include <signal.h> <stdio.h> <unistd.h> <sys/wait.h> \\
+    void myHandler(int sigNum)\{\\
+    \halftab printf("Child terminated Received \%d\n",sigNum);\\
+    \} \\
+    int main()\{ \\
+    \halftab signal(SIGCHLD,myHandler);\\
+    \halftab int child = fork();\\
+    \halftab if(!child)\{\\
+    \tab return 0; //terminate child\\
+    \halftab \} \\
+    \halftab while(wait(NULL)>0);\\
+    \}}
+  \end{flushleft}
+  \begin{flushleft}
+    \textbf{Inviare i segnali: kill()}\par 
+    \texttt{int kill(pid\_t pid, int sig);}\\
+    \texttt{\$ kill -$<signo>$ $<pid\_t>$} \\
+    Invia un segnale ad uno o più processi a seconda dell'argomento pid:
+    \begin{itemize}
+      \item pid $>$ 0: segnale al processo con PID=pid
+      \item pid = 0: segnale ad ogni processo dello stesso gruppo
+      \item pid = -1: segnale ad ogni processo possibile (stesso UID/RUID)
+      \item pid $<$ -1: segnale ad ogni processo del gruppo $|$pid$|$
+    \end{itemize}
+    Restituisce 0 se il segnale viene inviato, -1 in caso di errore.\\
+    Ogni tipo di segnale può essere inviato, non deve essere necessariamente un segnale 
+    corrispondente ad un evento effettivamente avvenuto \par 
+    Esempio \\
+    \texttt{\#include <signal.h> <stdio.h> <stdlib.h> <sys/wait.h> <unistd.h> \\
+    void myHandler(int sigNum)\{\\
+      \halftab printf("[\%d]ALARM!\n",getpid());\\ \}\\
+    int main(void)\{ \\
+    \halftab signal(SIGALRM,myHandler);\\
+    \halftab int child = fork();\\
+    \halftab if (!child) while(1); // block the child\\
+    \halftab printf("[\%d]sending alarm to \%d in 3 s\n",getpid(),child);\\
+    \halftab sleep(3);\\
+    \halftab kill(child,SIGALRM); // send ALARM, child's handler reacts\\
+    \halftab printf("[\%d]sending SIGTERM to \%d in 3 s\n",getpid(),child);\\
+    \halftab sleep(3);\\
+    \halftab kill(child,SIGTERM); // send TERM: default is to terminate\\
+    \halftab while(wait(NULL)>0);\\
+    \}}\par 
+    \textbf{kill() da bash}\\
+    kill \ace anche un programma in bash che accetta come primo argomento il tipo di 
+    segnale (\textbf{kill -l} per la lista) e come secondo argomento il PID del processo\\
+    Esempio\\
+    \texttt{\#include <signal.h> <stdio.h> <stdlib.h> <unistd.h> \\
+    void myHandler(int sigNum)\{ \\
+    \halftab printf("[\%d]ALARM!\n",getpid()); \\
+    \halftab exit(0);\\
+    \} \\
+    int main()\{ \\
+    \halftab signal(SIGALRM,myHandler);\\
+    \halftab printf("I am \%d\n",getpid());\\
+    \halftab while(1);\\
+    \}}\par 
+    \begin{flushleft}
+      \texttt{gcc bash.c -o bash.out\\
+      \$ ./bash.out\\
+      \# On new window/terminal\\
+      \$ kill -14 <PID>\\}
+    \end{flushleft}
+  \end{flushleft}
+  \begin{flushleft}
+    \textbf{alarm()}\par 
+    \texttt{unsigned int alarm(unsigned int seconds);}\\
+    Genera un segnale SIGALRM per il processo corrente dopo un lasso di tempo 
+    specificato in secondi. Restituisce i secondi rimanenti all'alarm precedente. \\
+    Esempio \\
+    \texttt{\#include <signal.h> <stdio.h> <stdlib.h> <unistd.h>\\
+            short cnt = 0;\\
+            void myHandler(int sigNum)\{printf("ALARM!\n"); cnt++;\} \\
+            int main()\{ \\
+            \halftab signal(SIGALRM,myHandler);\\
+            \halftab alarm(0); //Clear any pending alarm\\
+            \halftab alarm(5); //Set alarm in 5 seconds\\
+            \halftab //Set new alarm (cancelling previous one)\\
+            \halftab printf("Seconds remaining to previous alarm \%d\n",alarm(2));\\
+            \halftab while(cnt<1);\\
+            \}}
+  \end{flushleft}
+  \begin{flushleft}
+    \textbf{pause()}\par
+    \texttt{int pause();}\\
+    Esempio:\\
+    \texttt{\#include <signal.h> <unistd.h> <stdio.h> \\
+            void myHandler(int sigNum)\{\\
+            \halftab printf("Continue!\n"); \\
+            \}\\
+            int main()\{\\
+            \halftab signal(SIGCONT,myHandler);\\
+            \halftab signal(SIGUSR1,myHandler);\\
+            \halftab pause();\\
+            \}}
+  \end{flushleft}
+  \begin{flushleft}
+    \textbf{Bloccare segnali}\par 
+    Oltre alla lista dei "pending signal" esiste la \textbf{lista dei "blocked signals"}, ovvero dei 
+    segnali ricevuti dal processo ma volutamente non gestiti. Mentre i segnali ignorati 
+    non saranno mai gestiti, i segnali bloccati sono solo \textbf{temporaneamente} non gestiti.\par
+    \begin{flushleft}
+      Al contrario dei segnali ignorati, un segnale bloccato rimane nello stato pending fino 
+      a quando esso non viene gestito oppure il suo handler tramutato in ignore. 
+    \end{flushleft}
+    Per allertare il kernel dei segnali che devono essere bloccati, un processo pu\aco
+    \textbf{modificare la propria signal mask}, ovvero una struttura dati mantenuta nel kernel 
+    che può essere alterata con la funzione \texttt{sigprocmask()}
+    \begin{flushleft}
+      \textbf{Bloccare i segnali: sigset\_t}\par
+      La signal mask viene memorizzata come struttura dati ottimizzata che non pu\aco
+      essere modificata direttamente. Invece, pu\aco essere \textbf{gestita attraverso un sigset\_t}, 
+      cio\ace una struttura dati locale contenente un elenco di segnali.\\
+      Questo insieme pu\aco essere modificato con funzioni dedicate e poi 
+      pu\aco essere utilizzato per modificare la maschera di segnale stessa.
+      \begin{itemize}
+        \item \texttt{int sigemptyset(sigset\_t *set); Svuota}
+        \item \texttt{int sigfillset(sigset\_t *set); Riempie}
+        \item \texttt{int sigaddset(sigset\_t *set, int signo); Aggiunge singolo}
+        \item \texttt{int sigdelset(sigset\_t *set, int signo); Rimuove singolo}
+        \item \texttt{int sigismember(const sigset\_t *set, int signo); Interpella}
+      \end{itemize}
+      NB: la modifica di questa struttura non modifica implicitamente la maschera dei 
+      segnali! Le modifiche devono essere salvate con \texttt{sigprocmask()}.
+    \end{flushleft}
+    \begin{flushleft}
+      \textbf{sigprocmask()}\par
+      \texttt{int sigprocmask(int how, const sigset\_t *restrict set,\\ 
+              \tab\tab\tab sigset\_t *restrict oldset);}\\
+      A seconda del valore di \textbf{how} e di \textbf{set}, la maschera dei segnali del processo viene 
+      cambiata. Nello specifico:
+      \begin{itemize}
+        \item how = SIG\_BLOCK: i segnali in set sono aggiunti alla maschera;
+        \item how = SIG\_UNBLOCK: i segnali in set sono rimossi dalla maschera;
+        \item how = SIG\_SETMASK: set diventa la maschera.
+      \end{itemize}
+      Se oldset non \ace nullo, in esso verr\aca salvata la vecchia maschera 
+      (anche se set \ace nullo).\\
+      \begin{flushleft}
+        Esempio 1: \\
+        \texttt{\#include <signal.h> \\
+        int main()\{\\
+        \halftab sigset\_t mod,old;\\
+        \halftab sigfillset(\&mod); // Add all signals to the blocked list\\
+        \halftab sigemptyset(\&mod); // Remove all signals from blocked list\\
+        \halftab sigaddset(\&mod,SIGALRM); // Add SIGALRM to blocked list\\
+        \halftab sigismember(\&mod,SIGALRM); // is SIGALRM in blocked list?\\
+        \halftab sigdelset(\&mod,SIGALRM); // Remove SIGALRM from blocked list\\
+        \halftab // Update the current mask with the signals in ‘mod’\\
+        \halftab sigprocmask(SIG\_BLOCK,\&mod,\&old);\\
+        \}}
+      \end{flushleft}
+      \begin{flushleft}
+        Esempio 2: \\
+        \texttt{\#include <signal.h> <unistd.h> <stdio.h> \\
+                sigset\_t mod, old;\\
+                int i = 0;\\
+                void myHandler(int signo)\{\\
+                \halftab printf("signal received\n"); i++;
+                \}\\
+                int main()\{\\
+                \halftab printf("my id = \%d\n",getpid());\\
+                \halftab signal(SIGUSR1,myHandler);\\
+                \halftab sigemptyset(\&mod); //Initialise set\\
+                \halftab sigaddset(\&mod,SIGUSR1); \\
+                \halftab while(1) if(i==1) sigprocmask(SIG\_BLOCK,\&mod,\&old);\\
+                \}}
+      \end{flushleft}
+    \end{flushleft}
+    \begin{flushleft}
+      \textbf{Verificare pending signals: sigpending()}\par
+      \texttt{int sigpending(sigset\_t *set);}\\
+      \begin{flushleft}
+        Esempio:\\
+        \texttt{\#include <signal.h> <unistd.h> <stdio.h> <stdlib.h>\\
+                sigset\_t mod,pen;\\
+                void handler(int signo)\{ \\
+                \halftab printf("SIGUSR1 received\n");\\
+                \halftab sigpending(\&pen);\\
+                \halftab if(!sigismember(\&pen,SIGUSR1)) \\
+                \tab printf("SIGUSR1 not pending\n");\\
+                \halftab exit(0);\\
+                \}\\
+                int main()\{\\
+                \halftab signal(SIGUSR1,handler);\\
+                \halftab sigemptyset(\&mod);\\
+                \halftab sigaddset(\&mod,SIGUSR1);\\
+                \halftab sigprocmask(SIG\_BLOCK,\&mod,NULL);\\
+                \halftab kill(getpid(),SIGUSR1);\\ 
+                \halftab // sent but it’s blocked...\\
+                \halftab sigpending(\&pen); \\
+                \halftab if(sigismember(\&pen,SIGUSR1))\\
+                \tab printf("SIGUSR1 pending\n");\\
+                \halftab sigprocmask(SIG\_UNBLOCK,\&mod,NULL);\\
+                \halftab while(1);\\
+                \}}  
+      \end{flushleft}
+    \end{flushleft}
+  \end{flushleft}
+  \begin{flushleft}
+    \textbf{sigaction() system call}\par
+    \texttt{int sigaction(int signum, const struct sigaction *restrict act,
+            struct sigaction *restrict oldact);} \\
+    \begin{flushleft}
+      \texttt{struct sigaction \{\\
+      \halftab void (*sa\_handler)(int);\\
+      \halftab void (*sa\_sigaction)(int, siginfo\_t *, void *);\\
+      \halftab sigset\_t sa\_mask; //Signals blocked during handler\\
+      \halftab int sa\_flags; //modify behaviour of signal\\
+      \halftab void (*sa\_restorer)(void); //Deprecated, not POSIX\\
+      \};}
+    \end{flushleft}
+    Esempio: \\
+    \begin{flushleft}
+      \texttt{\#include <signal.h> <unistd.h> <stdlib.h> <stdio.h> \\
+      void handler(int signo)\{\\
+      \halftab printf("signal received\n");\\
+      \}\\
+      int main()\{ \\
+      \halftab struct sigaction sa; //Define sigaction struct\\
+      \halftab sa.sa\_handler = handler; //Assign handler to struct field\\
+      \halftab sigemptyset(\&sa.sa\_mask); //Define an empty mask \\
+      \halftab sigaction(SIGUSR1,\&sa,NULL);\\
+      \halftab kill(getpid(),SIGUSR1);\\
+      \}}
+    \end{flushleft}
+  \end{flushleft}
+  \begin{flushleft}
+    \textbf{Inviare un payload con un segnale}\\
+    \texttt{int sigqueue(pid\_t pid, int sig, const union sigval value);}\\
+    Invia un segnale sig al processo identificato da pid, accompagnato da un payload 
+    value. Quest'ultimo \ace rappresentato con la seguente union:
+    \begin{flushleft}
+      \texttt{union sigval \{\\
+      \halftab int sival\_int;\\
+      \halftab void *sival\_ptr;\\
+      \};}
+    \end{flushleft}
+    Essa può contenere un puntatore qualsiasi o un intero, che verr\aca ricevuto solo ed 
+    esclusivamente se il processo destinatario utilizza sigaction con SA\_SIGINFO.
+    \begin{flushleft}
+      Ricezione: \\
+      \texttt{\#include <signal.h> <unistd.h> <stdlib.h> <stdio.h> \\
+              void handler(int signo, siginfo\_t * info, void * empty)\{\\
+              \halftab printf("Received integer\n",info->si\_value.sival\_int);\\
+              \}\\
+              int main()\{\\
+              \halftab struct sigaction sa;\\
+              \halftab sa.sa\_sigaction = handler;\\
+              \halftab sigemptyset(\&sa.sa\_mask); \\
+              \halftab sa.sa\_flags $|$= SA\_SIGINFO; // Use sa\_sigaction\\
+              \halftab sigaction(SIGUSR1,\&sa,NULL);\\
+              \halftab while(1);\\
+              \}}
+    \end{flushleft}
+    \begin{flushleft}
+      Invio: \\
+      \texttt{int main(int argc, char ** argv)\{\\
+        \halftab union sigval value;\\
+        \halftab value.sival\_int = atoi(argv[2]); \\
+        \halftab sigqueue(atoi(argv[1],SIGUSR1,value));\\
+        \halftab while(1);\\
+        \}}
+    \end{flushleft}
+  \end{flushleft}
+\end{flushleft}

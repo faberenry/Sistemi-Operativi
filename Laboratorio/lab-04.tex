@@ -1,8 +1,9 @@
-\section{Lab-04}
+\section{Lab-04: File}
 \begin{flushleft}
   \textbf{File}\par 
   In unix ci sono due modi per interagre con i file:
   \begin{itemize}
+    \subsection{Streams}
     \item \textbf{Streams}:forniscono strumenti come la formattazione dei dati, bufferizzazione, ecc… \\
           Utilizzando gli streams, un file \ace descritto da un puntatore a una struttura di tipo 
           FILE (definita in stdio.h). I dati possono essere letti e scritti in vari modi (un 
@@ -83,6 +84,7 @@
               fclose(ptr);\\
             }
           \end{flushleft}
+    \subsection{File Descriptor}
     \item \textbf{File descriptor} interfaccia di basso livello costituita dalle system call messe a 
             disposizione dal kernel. Un file \ace descritto da un semplice intero (\textbf{file descriptor}) che punta alla rispettiva 
             entry nella file table del sistema operativo. I dati possono essere letti e scritti 
@@ -163,6 +165,7 @@
             close(openFile); } 
           \end{flushleft}
   \end{itemize}
+  \subsection{Canali standard}
   \textbf{Canali standard}
   \begin{itemize}
     \item I canali standard (in/err/out), sono rappresentati con strutture stream (stdin, stderr, stdout) e macro 
@@ -192,6 +195,7 @@
              \} }
           \end{flushleft}
   \end{itemize}
+  \subsection{Piping bash}
   \textbf{Piping con bash}
   \begin{flushleft}
     Normalmente un'applicazione eseguita da ash ha accesso ai canali standard, se le applicazioni sono usate 

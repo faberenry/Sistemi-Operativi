@@ -1,0 +1,260 @@
+\section{Lab-09: Message Queues}
+\begin{flushleft}
+  \textbf{Message Queues}\par 
+  Una coda di messaggi, message queue, \ace una lista concatenata memorizzata 
+  all'interno del kernel ed identificata con un ID (un intero positivo univoco), chiamato 
+  \textbf{queue identifier}.\\ 
+  Questo ID viene condiviso tra i processi interessati, e viene generato attraverso una 
+  chiave univoca.\\
+  Una coda deve essere innanzitutto generata in maniera analoga ad una FIFO, 
+  impostando dei permessi. Ad una coda esistente si possono aggiungere o recuperare 
+  messaggi tipicamente in modalit\aca "autosincrona": la lettura attende la presenza di un 
+  messaggio, la scrittura attende che via sia spazio disponibile. Questi comportamenti 
+  possono per\aco essere configurati.
+  \begin{flushleft}
+  Quanto trattiamo di message queue, abbiamo due identificativi:
+  \begin{itemize}
+    \item \textbf{Key}: intero che identifica un insieme di risorse condivisibili nel kernel, come 
+          semafori, memoria condivisa e code. Questa chiave univoca deve essere nota a più 
+          processi, e viene usata per ottenere il queue identifier.
+    \item \textbf{Queue identifier}: id univoco della coda, generato dal kernel ed associato ad una 
+          specifica key. Questo ID viene usato per interagire con la coda.
+  \end{itemize}
+  \end{flushleft}
+  \subsection{Creazione}
+  \begin{flushleft}
+    \textbf{Creazione}\par 
+    \begin{flushleft}
+      \texttt{int msgget(key\_t key, int msgflg)}
+    \end{flushleft}
+    Restituisce l'\textbf{identificativo} di una coda basandosi sulla chiave \textbf{key} e sui flags:
+    \begin{itemize}
+      \item \texttt{IPC\_CREAT}: cra una cosa se non esiste gi\aca, altrimenti restituisce l'identificativo di quella presente
+      \item \texttt{IPC\_EXCL}: usato in coppia con CREAT, fallisce se la cosa esiste gi\aca
+      \item \texttt{0xxx}: permessi pr accedere alla coda, analogo a quella del file system. utilizzabili anche "S\_IRUSR"
+    \end{itemize}
+  \end{flushleft}
+  \begin{flushleft}
+    \textbf{Ottenere una chiave univoca}\par 
+    \begin{flushleft}
+      \texttt{key\_t ftok(const char *path, int id)}
+    \end{flushleft}
+    Restituisce una chiave basandosi sul path (una cartella o un file), esistente ed 
+    accessibile nel file-system, e sull'id numerico. La chiave dovrebbe essere univoca e 
+    sempre la stessa per ogni coppia \textbf{$\tuple{path,id}$} in ogni istante sullo stesso sistema.\\
+    Un metodo d'uso, per evitare possibili conflitti, potrebbe essere generare un path (es. 
+    un file) temporaneo univoco, usarlo, eventualmente rimuoverlo, ed usare l'id per per 
+    rappresentare diverse “categorie” di code, a mo' di indice
+    \begin{flushleft}
+      \texttt{\#include <sys/ipc.h> \\
+              key\_t queue1Key = ftok("/tmp/unique", 1);\\
+              key\_t queue2Key = ftok("/tmp/unique", 2);}
+    \end{flushleft}
+  \end{flushleft}
+  \begin{flushleft}
+    Esempio creazione:\par
+    \texttt{<sys/types.h><sys/ipc.h> <sys/msg.h><stdio.h><fcntl.h>\\
+    void main()\{\\
+    \halftab remove("/tmp/unique"); //Remove file\\
+    \halftab key\_t queue1Key = ftok("/tmp/unique",1); //Get unique key, fail\\
+    \halftab creat("/tmp/unique", 0777); //Create file\\
+    \halftab queue1Key = ftok("/tmp/unique", 1); //Get unique key $\rightarrow$ ok\\
+    \halftab int queueId = msgget(queue1Key, 0777 | IPC\_CREAT); //crt q, ok\\
+    \halftab queueId = msgget(queue1Key, 0777); //Get q $\rightarrow$ ok\\
+    \halftab msgctl(queue1Key,IPC\_RMID,NULL); //Remove nonexist q $\rightarrow$ fail\\
+    \halftab msgctl(queueId,IPC\_RMID,NULL); //Remove q $\rightarrow$ ok\\
+    \halftab queueId = msgget(queue1Key, 0777); //Get nonexist q $\rightarrow$ fail\\
+    \halftab queueId = msgget(queue1Key, 0777 | IPC\_CREAT); //Create q $\rightarrow$ ok\\
+    \halftab queueId = msgget(queue1Key, 0777 | IPC\_CREAT); //Get q $\rightarrow$ ok\\
+    \halftab /* Create already existing queue -> fail */\\
+    \halftab queueId = msgget(queue1Key , 0777 | IPC\_CREAT | IPC\_EXCL); \\
+    \}
+    }
+  \end{flushleft}
+  \textbf{NB: Le queue sono persistenti}
+  \subsection{Comunicazione}
+  \begin{flushleft}
+    \textbf{Comunicazione}\par 
+    \begin{flushleft}
+      \texttt{struct msg\_buffer\{\\
+        \halftab long mtype;\\
+        \halftab char mtext[100];\\
+        \} message;}
+    \end{flushleft}
+    Ogni messaggio inserito nella coda ha:
+    \begin{itemize}
+      \item Un tipo, categoria, rappresentato da un intero maggiore di 0
+      \item Una grandezza non negativa
+      \item Un payload, un insieme di dati (bytes) di lunghezza corretta
+    \end{itemize}
+    Al contrario delle FIFO, i messaggi in una coda possono essere recuperati anche 
+    sulla base del tipo e non solo del loro ordine "assoluto" di arrivo. Cos\aci come i files, le 
+    code sono delle strutture persistenti che continuano ad esistere, assieme ai messaggi 
+    in esse salvati, anche alla terminazione del processo che le ha create. L'\textbf{eliminazione} 
+    della coda deve essere \textbf{esplicita}.\par 
+    Il payload del messaggio non deve essere necessariamente un campo 
+    testuale: pu\aco essere una qualsiasi struttura dati. Infatti, un 
+    messaggio pu\aco anche essere senza payload.
+  \end{flushleft}
+  \tab
+  \begin{flushleft}
+    \textbf{Invio messaggi}\par 
+    \begin{flushleft}
+      \texttt{int msgsnd(int msqid, const void *msgp, size\_t msgsz, int msgflg);}
+    \end{flushleft}
+    Aggiunge una \textbf{copia} del messaggio puntato da \textbf{msgp}, con un payload di dimensione 
+    \textbf{msgsz}, alla coda identificata da msquid. Il messaggio viene inserito 
+    immediatamente se c'\ace abbastanza spazio disponibile, altrimenti la chiamata si blocca 
+    fino a che abbastanza spazio diventa disponibile. Se msgflg è IPC\_NOWAIT allora 
+    la chiamata fallisce in assenza di spazio. \\
+    \textbf{NB}: msgsz \ace la \textbf{grandezza del payload} del messaggio, non del messaggio intero (che 
+    contiene anche il tipo)! Per esempio, sizeof(msgp.mtext)
+  \end{flushleft}
+  \begin{flushleft}
+    \textbf{Ricezione}\par 
+    \begin{itemize}
+      \item \begin{flushleft}
+        \texttt{ssize\_t msgrcv(int msqid,void *msgp,size\_t msgsz,\\ 
+                \tab \tab  \tab long msgtyp,int msgflg)}
+      \end{flushleft}
+      Rimuove un messaggio dalla coda msqid e lo salva nel buffer msgp. \\
+      msgsz specifica la lunghezza massima del payload del messaggio (per esempio mtext della 
+      struttura msgp).\\
+      Se il payload ha una lunghezza maggiore e msgflg è MSG\_NOERROR allora il payload viene troncato
+      (viene persa la parte in eccesso), se MSG\_NOERROR non \ace specificato allora il payload non viene
+      eliminato e la chiamata fallisce.\par
+      Se non sono presenti messaggi, la chiamata si blocca in loro attesa. Il flag 
+      IPC\_NOWAIT fa fallire la syscall se non sono presenti messaggi
+      \item \texttt{ssize\_t msgrcv(int msqid,void *msgp,size\_t msgsz,\\
+                    \tab \tab \tab long msgtyp,int msgflg)}\\
+            A seconda di msgtyp viene recuperato il messaggio:
+            \begin{itemize}
+              \item $msgtyp = 0$: primo messaggio della coda (FIFO)
+              \item $msgtyp > 0$: primo messaggio di tipo msgtyp, o primo messaggio di tipo 
+                    diverso da msgtyp se MSG\_EXCEPT \ace impostato come flag
+              \item $msgtyp < 0$: primo messaggio il cui tipo T \ace $min(T \leq |msgtyp|$)
+            \end{itemize}                    
+    \end{itemize}   
+    \textbf{Esempi Comunicazione}
+    \begin{enumerate}
+      \item \texttt{\#include <sys/types.h><sys/ipc.h><sys/msg.h><string.h><stdio.h> \\
+            struct msg\_buffer\{ \\
+            \halftab long mtype; \\
+            \halftab char mtext[100]; \\
+            \} msgp, msgp2; //Two different message buffers\\
+            int main(void)\{\\
+            \halftab msgp.mtype = 20;\\
+            \halftab strcpy(msgp.mtext,"This is a message");\\
+            \halftab key\_t q1key = ftok("/tmp/unique", 1);\\
+            \halftab int qId = msgget(q1key , 0777 | IPC\_CREAT | IPC\_EXCL);\\
+            \halftab int esito = msgsnd(qId , \&msgp, sizeof(msgp.mtext),0);\\
+            \halftab esito = msgrcv(qId , \&msgp2, sizeof(msgp2.mtext),20,0);\\
+            \halftab printf("Received \%s\n",msgp2.mtext);\\
+            \}}
+      \item \texttt{\#include <sys/types.h> <sys/ipc.h> <sys/msg.h> <string.h>\\
+            typedef struct book\{\\
+            \halftab char title[10]; \\
+            \halftab char description[200]; \\
+            \halftab short chapters;\\
+            \} Book;\\
+            struct msg\_buffer\{ \\ 
+            \halftab long mtype; \\
+            \halftab Book mtext; \\
+            \} msgp\_snd, msgp\_rcv; //Two different message buffers \\
+            int main(void)\{\\
+            \halftab msgp\_snd.mtype = 20;\\
+            \halftab strcpy(msgp\_snd.mtext.title,"Title");\\
+            \halftab strcpy(msgp\_snd.mtext.description,\\ \tab \tab "This is a description");\\
+            \halftab msgp\_snd.mtext.chapters = 17;\\
+            \halftab key\_t queue1Key = ftok("/tmp/unique", 1);\\
+            \halftab int queueId = msgget(queue1Key , 0777 | IPC\_CREAT);\\
+            \halftab int esito = msgsnd(queueId, \&msgp\_snd,\\ \tab \tab\tab sizeof(msgp\_snd.mtext),0);\\
+            \halftab esito = msgrcv(queueId, \&msgp\_rcv, \\ \tab \tab \tab sizeof(msgp\_rcv.mtext),20,0);\\
+            \halftab printf("Received: \%s \%s \%d\n",msgp\_rcv.mtext.title,\\
+                    \tab\tab msgp\_rcv.mtext.description, \\ \tab \tab msgp\_rcv.mtext.chapters);\\
+            \} }
+      \item \texttt{\#include <sys/types.h> <sys/ipc.h> <sys/msg.h> <string.h> \\
+      struct msg\_buffer\{  \\
+      \halftab long mtype; \\
+      \halftab char mtext[100]; \\
+      \} msgp\_snd,msgp\_rcv; //Two different message buffers\\
+      int main(int argc, char ** argv)\{\\
+      \halftab int to\_fetch = atoi(argv[1]); //Input to decide which msg to get\\
+      \halftab key\_t queue1Key = ftok("/tmp/unique", 1);\\
+      \halftab int queueId = msgget(queue1Key , 0777 | IPC\_CREAT);\\
+      \halftab msgp\_snd.mtype = 20;\\
+      \halftab strcpy(msgp\_snd.mtext,"A message of type 20");\\
+      \halftab int esito = msgsnd(queueId , \&msgp\_snd, sizeof(msgp.mtext),0);\\
+      \halftab msgp\_snd.mtype = 10; //Re-use the same message\\
+      \halftab strcpy(msgp\_snd.mtext,"Another message of type 10");\\
+      \halftab esito = msgsnd(queueId , \&msgp\_snd, sizeof(msgp.mtext),0);\\
+      \halftab esito = msgrcv(queueId , \&msgp\_rcv, sizeof(msgp\_rcv.mtext),to\_fetch,0);\\
+      \halftab printf("Received: \%s \%s \%d\n",msgp\_rcv.mtext.title,\\
+                \tab \tab msgp\_rcv.mtext.description,\\ \tab \tab msgp\_rcv.mtext.chapters);\\
+      \} }
+    \end{enumerate} 
+  \end{flushleft}
+  \subsection{Modifica coda}
+  \begin{flushleft}
+    \textbf{Modificare la coda}\par 
+    \begin{flushleft}
+      \texttt{int msgctl(int msqid, int cmd, struct msqid\_ds *buf);}
+    \end{flushleft}
+    Modifica la coda identificata da msqid secondo i comandi cmd, riempiendo buf con 
+    informazioni sulla coda (ad esempio timestamp dell'ultima scrittura, dell'ultima 
+    lettura, numero messaggi nella coda, etc…). Valori di cmd possono essere:
+    \begin{itemize}
+      \item IPC\_STAT: recupera informazioni da kernel 
+      \item IPC\_SET: imposta alcuni parametri a seconda di buf
+      \item IPC\_RMID: rimuove immediatamente la coda
+      \item IPC\_INFO: recupera informazioni generali sui limiti delle code nel sistema
+      \item MSG\_INFO: come IPC\_INFO ma con informazioni differenti
+      \item MSG\_STAT: come IPC\_STAT ma con informazioni differenti
+    \end{itemize}
+    \begin{flushleft}
+      \textbf{Struttura MSQID\_DS}\par 
+      \texttt{struct msqid\_ds \{\\
+              \halftab struct ipc\_perm msg\_perm; /* Ownership and permissions */\\
+              \halftab time\_t msg\_stime; /* Time of last msgsnd(2) */\\
+              \halftab time\_t msg\_rtime; /* Time of last msgrcv(2) */\\
+              \halftab time\_t msg\_ctime; //Time of creation or last modifi by msgctl\\
+              \halftab unsigned long msg\_cbytes; /* \# of bytes in queue */\\
+              \halftab msgqnum\_t msg\_qnum; /* \# of messages in queue */\\
+              \halftab msglen\_t msg\_qbytes; /* Maximum \# of bytes in queue */\\
+              \halftab pid\_t msg\_lspid; /* PID of last msgsnd(2) */\\
+              \halftab pid\_t msg\_lrpid; /* PID of last msgrcv(2) */\\
+        \};}
+    \end{flushleft}
+    \begin{flushleft}
+      \textbf{Struttura IPC\_PERM}\par 
+      \texttt{struct ipc\_perm \{ \\
+              \halftab key\_t \_\_key; /* Key supplied to msgget(2) */\\
+              \halftab uid\_t uid; /* Effective UID of owner */\\
+              \halftab gid\_t gid; /* Effective GID of owner */\\
+              \halftab uid\_t cuid; /* Effective UID of creator */\\
+              \halftab gid\_t cgid; /* Effective GID of creator */\\
+              \halftab unsigned short mode; /* Permissions */\\
+              \halftab unsigned short \_\_seq; /* Sequence number */\\
+        \};}
+    \end{flushleft}
+    \begin{flushleft}
+      \textbf{Esempio modifica}\par 
+      \texttt{int main(void)\{ \\
+        \halftab struct msqid\_ds mod;\\
+        \halftab int esito = open("/tmp/unique",O\_CREAT,0777);\\
+        \halftab key\_t queue1Key = ftok("/tmp/unique", 1);\\
+        \halftab int queueId = msgget(queue1Key , IPC\_CREAT | S\_IRWXU );\\
+        \halftab msgctl(queueId,IPC\_RMID,NULL);\\
+        \halftab queueId = msgget(queue1Key , IPC\_CREAT | S\_IRWXU ); \\
+        \halftab esito = msgctl(queueId,IPC\_STAT,\&mod); //Get info on queue\\
+        \halftab printf("Current permission on queue: \%d\n",mod.msg\_perm.mode);\\
+        \halftab mod.msg\_perm.mode = 0000;\\
+        \halftab esito = msgctl(queueId,IPC\_SET,\&mod); //Modify queue\\
+        \halftab printf("Current permission on queue: 
+                        \\ \tab \tab \%d\n\n",mod.msg\_perm.mode);\\
+        \} }
+    \end{flushleft}
+  \end{flushleft}
+  \textbf{NB: Le code sono un comodo metodo di comunicazione per l'invio e la ricezione di 
+  informazioni anche "complesse" tra generici}
+\end{flushleft}

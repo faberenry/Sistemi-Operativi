@@ -21,6 +21,7 @@
       \item \textbf{Kernel space}: ambiente in cui viene eseguito il kernel
     \end{itemize}
   \end{flushleft}
+  \subsection{System Calls}
   \begin{flushleft}
     \textbf{System calls} \par 
     Le interfacce con cui i programmi accedono al hw si chiamano \textbf{system calls}, cio\ace chiamate al sistema 
@@ -28,6 +29,341 @@
     Le chiamate restituiscono -1 in caso di errore e settano la varaibile globale \texttt{errno}. Errori validi sono numeri 
     positivi e seguono lo standard POSIX, che definisce gli alias \par 
     \textbf{Librerie di sistema} \par 
-    Utilizzando il comando di shell \texttt{ldd} su di un eseguibile si possono visualizzare
+    Utilizzando il comando di shell \texttt{ldd} su di un eseguibile si possono visualizzare le 
+    librerie condivise caricate e, fra queste, vi sono tipicamente anche ld-linux.so, e 
+    libc.so.
+    \begin{itemize}
+      \item \textbf{ld-linux.so}: quando un programma è caricato in memoria, il sistema operativo 
+      passa il controllo a ld-linux.so anzichè al normale punto di ingresso 
+      dell’applicazione. ld-linux trova e carica le librerie richieste, prepara il 
+      programma e poi gli passa il controllo.
+      \item \textbf{libc.so}: la libreria GNU C solitamente nota come glibc che contiene le funzioni 
+      basilari più comuni.
+    \end{itemize}
+    \textbf{Esempi di chiamate di sistema} \par 
+    \begin{itemize}
+      \item \textbf{time(), ctime()} \par 
+            \texttt{time\_t time( time\_t *second )\\
+                    char * ctime( const time\_t *timeSeconds )}\par 
+            \texttt{\#include <time.h> \\
+                    \#include <stdio.h>\\
+                    void main()\{ \\
+                    \halftab time\_t theTime;\\
+                    \halftab time\_t whatTime = time(\&theTime); //seconds since 1/1/1970\\
+                    \halftab //Print date in Www Mmm dd hh:mm:ss yyyy \\
+                    \halftab printf("Current time = \%s= \%d\textbackslash n", \\ \tab \tab ctime(\&whatTime),theTime); \\
+                    \}} 
+      \item \textbf{chdir(), getcwd()} \par 
+            \texttt{int chdir( const char *path );\\
+                    char * getcwd( char *buf, size\_t sizeBuf );}\par 
+            \texttt{\#include <unistd.h> \\
+                    \#include <stdio.h>\\
+                    void main()\{ \\
+                    \halftab char s[100]; \\
+                    \halftab getcwd(s,100); // copy path in buffer \\
+                    \halftab printf("\%s\n", s); //Print current working dir \\
+                    \halftab chdir(".."); //Change working dir \\
+                    \halftab printf("\%s\n", getcwd(NULL,100)); // Allocates buffer\\
+                    \}}
+      \item \textbf{dup(), dup2()}\par 
+            \texttt{int dup(int oldfd);\\
+                    int dup2(int oldfd, int newfd);}  \par
+            \texttt{\#include <unistd.h> <stdio.h> <fcntl.h>\\
+                    int main(void)\{\\
+                    \halftab char buf[51];\\
+                    \halftab int fd = open("file.txt",O\_RDWR); //file exists\\
+                    \halftab int r = read(fd,buf,50); //Read 50 bytes from ‘fd’ in ‘buf’\\
+                    \halftab buf[r] = 0; printf("Content: \%s\n",buf);\\
+                    \halftab int cpy = dup(fd); // Create copy of file descriptor\\
+                    \halftab \textit{// Copy cpy to descriptor 22 (close 22 if opened)} \\
+                    \halftab dup2(cpy,22); \\ 
+                    \halftab \textit{// Move I/O on all 3 file descriptors!} \\
+                    \halftab lseek(cpy,0,SEEK\_SET); \\
+                    \halftab \textit{// Write starting from 0-pos} \\
+                    \halftab write(22,"This is a fine\n",16); \\
+                    \halftab close(cpy); //Close ONE file descriptor
+                    \} }
+      \item \textbf{chmod(), chown()} \par 
+            \texttt{int chown(const char *pathname, uid\_t owner, gid\_t group)\\
+                    int fchown(int fd, uid\_t owner, gid\_t group)\\
+                    int chmod(const char *pathname, mode\_t mode)\\
+                    int fchmod(int fd, mode\_t mode)}\par  
+            \texttt{\#include <fcntl.h>\\
+                    \#include <unistd.h>\\
+                    \#include <sys/stat.h>\\
+                    void main()\{ \\
+                    \halftab int fd = open("file",O\_RDONLY);\\
+                    \halftab // Change owner to user:group 1000:1000\\
+                    \halftab fchown(fd, 1000, 1000); \\
+                    \halftab // Permission to r/r/r\\
+                    \halftab chmod("file",S\_IRUSR|S\_IRGRP|S\_IROTH); \\
+                    \}}
+    \end{itemize}
+    \subsection{Exec()}
+    \textbf{Exec() family} \par 
+    La famiglia di funzioni exec ha come scopo finale l'esecuzione di un programma, 
+    sostituendo l'immagine del processo corrente con una nuova immagine. \textbf{Il PID del
+    processo e la sua file table non cambiano}.\\
+    La chiamata di sistema di base \ace execve(), ma vedremo tutti i suoi alias che 
+    differiscono solo per gli argomenti 
+    accettati, mantenendo lo stesso identico comportamento. \\
+    Ogni alias \ace composto dalla parola chiave exec seguita dalle seguenti lettere:
+    \begin{itemize}
+      \item l: accetta una lista di argomenti
+      \item v: accetta un vettore, quindi un solo argomento di diversi argomenti
+      \item p: usa la variabile d'ambiente PATH per cercare il binario
+      \item e: usa un vettore di variabili d'ambiente (es. "name=value") 
+    \end{itemize}
+    NB: Ogni vettori di argomenti deve terminare con un elemento NULL\par 
+    \begin{flushleft}
+      \textbf{Chiamte funzioni}: 
+      \begin{itemize}
+        \item \texttt{int execv (const char *path, char *const argv[])}
+        \item \texttt{int execvp (const char *file, char *const argv[])}
+        \item \texttt{int execve (const char *path, char *const argv[],
+                      char *const envp[]);}
+        \item \texttt{int execvpe (const char *file, char *const argv[],
+                      char *const envp[])}
+        \item \texttt{int execl (const char *path, const char * arg0,…,argn,NULL)}
+        \item \texttt{int execlp (const char *file, const char * arg0,…,argn,NULL)}
+        \item \texttt{int execle (const char *path, const char * arg0,…,argn,NULL,
+                      char *const envp[])}
+        \item \texttt{int execlpe(const char *file, const char * arg0,…,argn,NULL, 
+                      char *const envp[])}
+      \end{itemize}
+      \textbf{Esempi}:
+      \begin{flushleft}
+        \begin{itemize}
+          \item \textbf{execv()}\par 
+                \textit{execv1.out} \\
+                \texttt{\#include <unistd.h>\\
+                        \#include <stdio.h>\\
+                        void main()\{ \\
+                        \halftab char * argv[] = \{"par1","par2",NULL\};\\
+                        \halftab execv("./execv2.out",argv); //Replace current process \\
+                        \halftab printf("This is execv1\n"); \\
+                        \}}\par 
+                \textit{execv2.out} \\
+                \texttt{\#include <stdio.h> \\
+                        void main(int argc, char ** argv) \{ \\
+                        \halftab printf("This is execv2 with \%s and \%s\n",argv[0],argv[1]);\\  
+                        \} }
+          \item \textbf{execle()} \par 
+                \textit{execle1.out} \\
+                \texttt{\#include <unistd.h>\\
+                        \#include <stdio.h> \\
+                        void main()\{ \\
+                        \halftab char * env[] = {"CIAO=hello world",NULL};\\
+                        \halftab //Replace proc.\\
+                        \halftab execle("./execle2.out","par1","par2",NULL,env); \\ 
+                        \halftab printf("This is execle1\n"); \\
+                        \}} \par 
+                \textit{execle2.out} \\
+                \texttt{\#include <stdio.h> \\
+                        \#include <stdlib.h>\\
+                        void main(int argc, char ** argv)\{ \\
+                        \halftab printf("This is execle2 with par:\%s and \%s. \\ \tab CIAO =
+                                  \%s\n",argv[0],argv[1],getenv("CIAO")); \\
+                        \}} 
+          \item \textbf{dup2/exec} \par 
+                \textit{execvDuo.o} \\
+                \texttt{\#include <stdio.h> \\
+                        \#include <fcntl.h> \\
+                        \#include <unistd.h>\\
+                        void main() \{ \\
+                        \halftab int outfile = open("/tmp/out.txt",
+                        O\_RDWR | O\_CREAT, \\ \tab \tab \tab \tab S\_IRUSR | S\_IWUSR); \\
+                        \halftab dup2(outfile, 1); // copy outfile to FD 1 \\
+                        \halftab char *argv[]=\{"./time.out",NULL\}; // time.out esempi prec \\
+                        \halftab execvp(argv[0],argv); // Replace current process\\
+                        \}} 
+        \end{itemize}
+      \end{flushleft}
+
+    \end{flushleft}
+    \begin{flushleft}
+      \textbf{system()} \par 
+      \texttt{int system(const char * str);} \\
+      \texttt{\#include <stdlib.h> <stdio.h> \\
+              \#include <sys/wait.h> /* For WEXITSTATUS */ \\
+              void main()\{ \\
+              \halftab int outcome = system("echo ciao"); // execute command in shell \\
+              \halftab printf("Outcome = \%d\n",outcome); \\
+              \halftab outcome = system("if [[ \$PWD < \"ciao\" ]]; then echo min; fi"); \\
+              \halftab printf("Outcome = \%d\n",outcome); \\
+              \halftab outcome = system("notExistingCommand"); \\
+              \halftab printf("Outcome = \%d\n",WEXITSTATUS(outcome)); \\
+              \} }
+    \end{flushleft}
+  \end{flushleft}
+  \subsection{Fork()}
+  \begin{flushleft}
+    \textbf{Forking} \par 
+    Il forking \ace la "generazione" di nuovi processi (uno alla volta) partendo da uno 
+    esistente. La syscall principale per il forking \ace \texttt{fork()}. \\
+    Quando un processo attivo invoca questa syscall, il kernel lo clona modificando 
+    per\aco alcune informazioni, in particolare quelle che riguardano la sua collocazione 
+    nella gerarchia complessiva dei processi. \\
+    Il processo che effettua la chiamata \ace definito "padre/genitore", quello generato \ace 
+    definito "figlio". \par 
+    \textbf{Identificativi dei processi}\\
+    Ad ogni processo \ace associato un identificativo univoco per istante temporale, sono 
+    organizzati gerarchicamente (genitore-figlio) e suddivisi in insiemi principali 
+    (sessioni) e secondari (gruppi). Anche gli utenti hanno un loro identificativo e ad 
+    ogni processo ne sono abbinati due: quello reale e quello effettivo (di esecuzione)
+    \begin{itemize}
+      \item PID - Process ID
+      \item PPID - Parent Process ID
+      \item SID - Session ID
+      \item PGID - Process Group ID
+      \item UID/RUID - (Real) User ID
+      \item EUID - Effective User ID
+    \end{itemize}
+    \textbf{fork: elementi clonati e elementi nuovi} \par 
+    Sono clonati gli elementi principali come il PC (Program Counter), i registri, la 
+    tabella dei file (file descriptors) e i dati di processo (variabili). Le meta-informazioni 
+    come il "pid" e il "ppid" sono aggiornate (non come in execve()). \\
+    L'esecuzione procede per entrambi (quando saranno schedulati) da PC+1 
+    (tipicamente l'istruzione seguente il fork o la valutazione dell'espressione in cui essa 
+    è utilizzata):
+    \begin{itemize}
+      \item \texttt{fork();\\ printf("\n");} \\
+            Prossimo step: printf
+      \item \texttt{f = fork(); \\ printf("\n")} \\
+            Prossimo step: assegnamento ad f
+    \end{itemize}
+    \textbf{getpid(), getppid()} 
+    \begin{itemize}
+      \item \texttt{pid\_t getpid()} : restituisce il PID del processo attivo
+      \item \texttt{pid\_t getppid()} : restituisce il PID del processo genitore
+    \end{itemize}
+    \textbf{Esempio}: \\ 
+    \texttt{\#include <stdio.h> <unistd.h> <stdlib.h> \\
+            void main()\{ \\
+            \halftab printf("Subshell \$\$ = "); \\
+            \halftab fflush(stdout); // Forza l'output di printf\\
+            \halftab system("echo \$\$"); // subshell\\
+            \halftab printf("PID: \%dPPID: \%d\n",getpid(),getppid());\\
+            \}}
+    N.B.: includendo le librerie \texttt{<sys/types.h>} e \texttt{sys/wait.h} il tipo \texttt{pid\_t} 
+    \ace un intero che rappresenta un id del processo \par  
+    \textbf{fork: valore di ritorno} \par
+    La funzione restituisce un valore che solitamente \ace catturato in una variabile (o usato 
+    comunque in un'espressione). \\
+    Come per tutte le syscall in generale, il valore è -1 in caso di errore (in questo caso 
+    non ci sar\aca nessun nuovo processo, ma solo quello che ha invocato la chiamata). \\
+    Se ha successo entrambi i processi ricevono un valore di ritorno, ma questo \ace diverso
+    nei due casi:
+    \begin{itemize}
+      \item Il processo genitore riceve come valore il nuovo PID del processo figlio
+      \item Il processo figlio riceve come valore 0
+    \end{itemize}
+    \textbf{fork: relazione tra i processi} \par
+    I processi genitore-figlio:
+    \begin{itemize}
+      \item Conoscono reciprocamente il loro PID (ciascuno conosce il proprio tramite 
+            getpid(), il figlio conosce quello del genitore con getppid(), il genitore 
+            conosce quello del figlio come valore di ritorno di fork())
+      \item Si possono usare altre syscall per semplici interazioni come wait e waitpid
+      \item Eventuali variabili definite prima del fork sono valorizzate allo stesso modo in 
+            entrambi: se riferiscono risorse (ad esempio un “file descriptor” per un file su 
+            disco) fanno riferimento esattamente alla stessa risorsa
+    \end{itemize}
+    \textbf{fork: wait()} \par 
+    \texttt{pid\_t wait (int *status)} \\
+    \begin{flushleft}
+      Attende il cambio di stato di un processo figlio (uno qualsiasi) restituendone il PID e salvando 
+      in status lo stato del figlio (se il puntatore non \ace NULL). Il cambio di stato avviene se il figlio 
+      viene terminato o la sua esecuzione interrotta/ripresa a seguito di un segnale \\
+      Se non esiste alcun figlio restituisce -1. \\
+      Nel nostro caso ci interessa principalmente la terminazione del figlio. Questa system call ci 
+      permette di bloccare il processo (anche sincronizzarlo) fino a quando il figlio non ha finito le sue 
+      operazioni. \par
+      \texttt{while(wait(NULL)>0);} questo comando aspetta tutti i figli \par 
+      \textbf{Interpretazione stato}\\
+      Lo stato di ritorno \ace un numero che comprende più valori "composti" interpretabili con apposite 
+      macro, molte utilizzabili a mo' di funzione (altre come valore) passando lo "stato" ricevuto come 
+      risposta come ad esempio:
+      \begin{itemize}
+        \item \texttt{WEXITSTATUS(sts)}: restituisce lo stato vero e proprio (ad esempio il valore usato nella “exit”).
+        \item \texttt{WIFCONTINUED(sts)}: true se il figlio ha ricevuto un segnale SIGCONT.
+        \item \texttt{WIFEXITED(sts)}: true se il figlio è terminato normalmente.
+        \item \texttt{WIFSIGNALED(sts)}: true se il figlio è terminato a causa di un segnale non gestito.
+        \item \texttt{WIFSTOPPED(sts)}: true se il figlio è attualmente in stato di “stop”.
+        \item \texttt{WSTOPSIG(sts)}: numero del segnale che ha causato lo “stop” del figlio.
+        \item \texttt{WTERMSIG(sts)}: numero del segnale che ha causato la terminazione del figlio.
+      \end{itemize}
+      \textbf{Esempio}
+      \texttt{\#include <stdio.h> <unistd.h> <sys/wait.h> \\
+              int main(void) \{ \\
+              \halftab int isChild = !fork(); \\
+              \halftab if(isChild) \{ \\
+              \tab sleep(3); return 5; \\
+              \halftab \} \\
+              \halftab int childStatus; \halftab wait(\&childStatus); \\
+              \halftab printf("Children terminated? \%d\n Return code: \%d\n",
+              \tab WIFEXITED(childStatus),WEXITSTATUS(childStatus)); \\
+              \halftab return 0;
+              \}}\\
+      \begin{flushleft}
+      \textbf{fork: waitpid()} \par 
+        \texttt{pid\_t waitpid(pid\_t pid, int *status, int options)}
+      \end{flushleft}
+      Consente un'attesa selettiva basata su dei parametri. \textbf{pid} pu\ace essere:
+      \begin{itemize}
+        \item -n (aspetta un figlio qualsiasi nel gruppo $|-n|$)
+        \item -1 (aspetta un figlio qualsiasi)
+        \item 0 (aspetta un figlio qualsiasi appartenente allo stesso gruppo)
+        \item n (aspetta il figlio con PID=n)
+      \end{itemize}
+      \textbf{options} sono i seguenti parametri ORed:
+      \begin{itemize}
+        \item WNOHANG: ritorna immediatamente se nessun figlio \ace terminato allora non si resta in attesa
+        \item WUNTRACED: ritorna anche se un figlio si \ace interrotto senza terminare.
+        \item WCONTINUED: ritorna anche se un figlio ha ripreso l'esecuzione.
+      \end{itemize}
+      \texttt{wait(st)} \ace l'equivalente di \texttt{waitpid(-1, st, 0)} 
+    \end{flushleft}
+    \begin{flushleft}
+      \textbf{fork multiplo}: \ace possibile effettuare pi\acu fork all'interno dello stesso programma
+    \end{flushleft}
+    \begin{flushleft}
+      \textbf{Esempio fork \& wait} \\
+      \texttt{\#include <stdio.h> <stdlib.h> <unistd.h> <time.h> <sys/wait.h>\\
+              int main() \{\\
+              \halftab int fid=fork(), wid, st, r; // Generate child\\
+              \halftab srand(time(NULL)); // Initialise random\\
+              \halftab r=rand()\%256; // Get random between 0 and 255\\
+              \halftab if (fid==0) \{ //If it is child\\
+              \tab printf("Child... (\%d)", r); fflush(stdout);\\
+              \tab sleep(3); // Pause execution for 3 seconds\\
+              \tab printf(" done!\n");\\
+              \tab exit(r); // Terminate with random signal\\
+              \halftab \} else \{ // If it is parent\\
+              \tab printf("Parent...\n");\\
+              \tab wid=wait(\&st); // wait for ONE child to terminate\\
+              \tab printf("...child's id: \%d==\%d (st=\%d)\n", fid, wid, \\ \tab \tab WEXITSTATUS(st));\\
+              \halftab \} \\  \}}
+    \end{flushleft}
+    \begin{flushleft}
+      \textbf{Processi zombie e orfani} \\
+      Normalmente quando un processo termina il suo stato di uscita viene "catturato" dal 
+      genitore: alla terminazione il sistema tiene traccia di questo insieme di informazioni 
+      (lo stato) fino a che il genitore le utilizza consumandole (con wait o waitpid). \\
+      Se il genitore non cattura lo stato d'uscita, i suoi processi figli vengono definiti \textbf{zombie} 
+      (in realt\ace non ci sono pi\acu, ma esiste un riferimento in sospeso nel sistema). \\
+      Se un genitore termina prima del figlio, quest'ultimo viene definito \textbf{orfano} e viene 
+      adottato dal processo principale (tipicamente “systemd” con pid pari a 1). \\
+      Un processo zombie che diventa anche orfano \ace poi gestito dal processo che lo adotta 
+      (che effettua periodicamente dei wait/waitpid appositamente). \\
+      Per ispezionare la lista di processi attivi usare il comando \texttt{ps} con le seguenti 
+      opzioni:
+      \begin{itemize}
+        \item a: mostra lo stato (T: stopped, Z: zombie, R: running, etc…)
+        \item -H: mostra la gerarchia processi
+        \item -e: mostra l'intera lista dei processi, non solo della sessione corrente
+        \item -f: mostra il PID del padre
+      \end{itemize}
+    \end{flushleft}
   \end{flushleft}
 \end{flushleft}

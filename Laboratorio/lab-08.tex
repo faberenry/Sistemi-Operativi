@@ -1,0 +1,351 @@
+\section{Lab-08: Pipe}
+\subsection{Anonime}
+\begin{flushleft}
+  \textbf{Pipe anonime}
+  \begin{flushleft}
+    \textbf{Piping}\par 
+    Il piping connette l'output (stdout e stderr) di un comando all'input (stdin) di un 
+    altro comando, consentendo dunque la comunicazione tra i due. \\
+    \begin{flushleft}
+      Esempio: \\
+      \texttt{ls . | sort -R \#stout $\rightarrow$ stdin\\
+      ls nonExistingDir |\& wc \#stdout e stderr $\rightarrow$ stdin\\
+      cat /etc/passwd | wc | less \#out $\rightarrow$ in, out$\rightarrow$ in}
+    \end{flushleft}
+    I processi sono eseguiti in concorrenza utilizzando un buffer: 
+    \begin{itemize}
+      \item Se pieno lo scrittore (left) si sospende fino ad avere spazio libero
+      \item Se vuoto il lettore si sospende fino ad avere i dati
+    \end{itemize}
+    Esempio:
+    \begin{flushleft}
+      \texttt{./output.out | ./input.out}\\
+      \textit{output.out}\\
+      \texttt{\#include <stdio.h> <unistd.h>\\
+              int main()\{ \\
+              \halftab for (int i = 0; i<3; i++) \{\\
+              \tab sleep(2);\\
+              \tab fprintf(stdout,"Written in buffer");\\
+              \tab fflush(stdout);\\
+              \halftab \};\\ \};}\par
+      \textit{input.out}\\
+      \texttt{\#include <stdio.h> <unistd.h>\\
+              int main() \{\\
+              \halftab char msg[50]; int n=3;\\
+              \halftab while((n--)>0)\{\\
+              \tab int c = read(0,msg,49); \\
+              \tab if (c>0) \{ \\
+              \tab \halftab msg[c]=0;\\
+              \tab \halftab fprintf(stdout,"Read: '\%s' (\%d)\n",msg,c);\\
+              \tab \};\\
+              \halftab \};\\
+              \};}
+    \end{flushleft}
+    Le pipe anonime, come quelle usate su shell, 'uniscono' due processi aventi un 
+    antenato comune (oppure tra padre-figlio). Il collegamento \ace \textbf{unidirezionale} ed 
+    avviene utilizzando un buffer di dimensione finita.\par 
+    Per interagire con il buffer (la pipe) si usano \textbf{due} file descriptors: 
+    uno per il lato in scrittura ed uno per il lato in lettura. Visto che i 
+    processi figli ereditano i file descriptors, questo consente la comunicazione tra i processi.
+    \begin{flushleft}
+      \textbf{Creazione pipe}\par 
+      \texttt{int pipe(int pipefd[2]); //fd[0] lettura, fd[1] scrittura}\par 
+      \begin{flushleft}
+        \texttt{\#include <stdio.h> <unistd.h>\\
+                int main()\{\\
+                \halftab int fd[2], cnt = 0;\\
+                \halftab while(pipe(fd) == 0)\{ //Create unnamed pipe using 2 FD\\
+                \tab cnt++;\\
+                \tab printf("\%d,\%d,",fd[0],fd[1]);\\
+                \halftab \}\\
+                \halftab printf("\n Opened \%d pipes, then error\n",cnt);\\
+                \halftab int op = open("/tmp/tmp.txt",O\_CREAT|O\_RDWR,S\_IRUSR|S\_IWUSR);\\
+                \halftab printf("File opened with fd \%d\n",op);\\
+                \}
+        }
+      \end{flushleft}
+    \end{flushleft}
+    \begin{flushleft}
+      \textbf{Lettura pipe}\par 
+      \texttt{int read(int fd[0],char * data, int num)}\\
+      La lettura della pipe tramite il comando read restituisce valori differenti a seconda 
+      della situazione:
+      \begin{itemize}
+        \item In caso di successo, read() restituisce il numero di bytes effettivamente letti
+        \item Se il lato di scrittura \ace stato chiuso (da ogni processo), con il buffer vuoto 
+              restituisce 0, altrimenti restituisce il numero di bytes letti.
+        \item Se il buffer \ace vuoto ma il lato di scrittura \ace ancora aperto (in qualche processo) 
+              il processo si sospende fino alla disponibilità dei dati o alla chiusura
+        \item Se si provano a leggere pi\acu bytes (num) di quelli disponibili, vengono recuperati 
+              solo quelli presenti
+      \end{itemize}
+      Esempio:
+      \begin{flushleft}
+        \texttt{\#include <stdio.h> <unistd.h>\\
+        int main(void)\{ \\
+        \halftab int fd[2]; char buf[50];\\
+        \halftab int esito = pipe(fd); //Create unnamed pipe\\
+        \halftab if(esito == 0)\{ \\
+        \tab write(fd[1],"writing",8); // Writes to pipe\\
+        \tab int r = read(fd[0],\&buf,50); //Read from pipe\\
+        \tab printf("Last read \%d. Received: '\%s'\n",r,buf);\\
+        \tab // close(fd[1]); // hangs when commented\\
+        \tab r = read(fd[0],\&buf,50); //Read from pipe\\
+        \tab printf("Last read \%d. Received: '\%s'\n",r,buf);\\
+        \halftab \}\\ \}}
+      \end{flushleft}
+    \end{flushleft}
+    \begin{flushleft}
+      \textbf{Scrittura pipe}\par 
+      \begin{flushleft}
+        \texttt{int write(int fd[1],char * data, int num)}
+      \end{flushleft}
+      La scrittura della pipe tramite il comando write restituisce il numero di bytes scritti. 
+      Tuttavia, se il lato in lettura \ace stato chiuso viene inviato un segnale \texttt{SIGPIPE} allo 
+      scrittore (default handler quit) e la chiamata restituisce -1. \\
+      In caso di scrittura, se vengono scritti \textbf{meno} bytes di quelli che ci possono stare 
+      (\texttt{PIPE\_BUF}) la scrittura \ace "atomica" (tutto assieme), in caso contrario non c'\ace 
+      garanzia di atomicit\aca e la scrittura sar\aca bloccata (in attesa che il buffer venga 
+      svuotato) o fallir\aca se il flag \texttt{O\_NONBLOCK} viene usato.\\
+      Per modificare le propriet\aca di una pipe, possiamo usare la system call \textbf{fnctl}, la 
+      quale manipola i file descriptors.\\
+      \begin{flushleft}
+        \texttt{int fcntl(int fd, F\_SETFL, O\_NONBLOCK)}
+      \end{flushleft}
+      Esempio:
+      \begin{flushleft}
+        \texttt{\#include <unistd.h> <stdio.h> <signal.h> <errno.h> <stdlib.h> \\
+                void handler(int signo)\{\\
+                \halftab printf("SIGPIPE received\n"); perror("Error in handler"); \\
+                \}\\
+                int main(void)\{\\
+                \halftab signal(SIGPIPE,handler);\\
+                \halftab int fd[2]; char buf[50];\\
+                \halftab int esito = pipe(fd); //Create unnamed pipe\\
+                \halftab close(fd[0]); //Close read side\\
+                \halftab printf("Attempting write\n");\\
+                \halftab int numOfWritten = write(fd[1],"writing",8);\\
+                \halftab printf("I've written \%d bytes\n",numOfWritten);\\
+                \halftab perror("Error after write");\\
+        \} }
+      \end{flushleft}
+    \end{flushleft}
+    \begin{flushleft}
+      \textbf{Comunicazione unidirezionale}\\
+      Un tipico esempio di comunicazione unidirezionale tra un processo scrittore P1 ed un 
+      processo lettore P2 \ace il seguente:
+      \begin{itemize}
+        \item P1 crea una pipe()
+        \item P1 esegue un fork() e crea P2
+        \item P1 chiude il lato lettura: close(fd[0])
+        \item P2 chiude il lato scrittura: close(fd[1])
+        \item P1 e P2 chiudono l'altro fd appena finiscono di comunicare.
+      \end{itemize}
+      \begin{flushleft}
+        \texttt{\#include <stdio.h> <unistd.h> <sys/wait.h>\\
+                int main()\{ \\
+                \halftab int fd[2]; char buf[50];\\
+                \halftab pipe(fd); //Create unnamed pipe\\
+                \halftab int p2 = !fork();\\
+                \halftab if(p2)\{\\
+                \tab close(fd[1]);\\
+                \tab int r = read(fd[0],\&buf,50); //Read from pipe\\
+                \tab close(fd[0]); printf("Buf: '\%s'\n",buf);\\
+                \halftab \}else\{\\
+                \tab close(fd[0]);\\
+                \tab write(fd[1],"writing",8); // Write to pipe\\
+                \tab close(fd[1]);\\
+                \halftab \}\\
+                \halftab while(wait(NULL)>0);\\
+        \}}
+      \end{flushleft}
+    \end{flushleft}
+    \begin{flushleft}
+      \textbf{Comunicazione bidirezionale}\par
+      Un tipico esempio di comunicazione bidirezionale tra un processo scrittore P1 ed un 
+      processo lettore P2 \ace il seguente:
+      \begin{itemize}
+        \item P1 crea due pipe(), pipe1 e pipe2
+        \item P1 esegue un fork() e crea P2
+        \item P1 chiude il lato lettura di pipe1 ed il lato scrittura di pipe2
+        \item P2 chiude il lato scrittura di pipe1 ed il lato lettura di pipe2
+        \item P1 e P2 chiudono gli altri fd appena finiscono di comunicare.
+      \end{itemize}
+      Esempio:
+      \begin{flushleft}
+        \texttt{\#include <stdio.h> <unistd.h> <sys/wait.h>\\
+                \#define READ 0, WRITE 1 \\
+                int main()\{ \\
+                \halftab int pipe1[2] \\ 
+                \halftab int pipe2[2];\\
+                \halftab char buf[50];\\
+                \halftab pipe(pipe1); \\
+                \halftab pipe(pipe2); //Create two unnamed pipe\\
+                \halftab int p2 = !fork();\\
+                \halftab if(p2)\{ \\
+                \tab close(pipe1[WRITE]); close(pipe2[READ]);\\
+                \tab int r = read(pipe1[READ],\&buf,50); //Read from pipe\\
+                \tab close(pipe1[READ]); printf("P2 received: '\%s'\n",buf);\\
+                \tab write(pipe2[WRITE],"Msg from p2",12); // Writes to pipe\\
+                \tab close(pipe2[WRITE]);\\
+                \halftab \}else\{\\
+                \tab close(pipe1[READ]); close(pipe2[1]);\\
+                \tab write(pipe1[WRITE],"Msg from p1",12); // Writes to pipe\\
+                \tab close(pipe1[WRITE]);\\
+                \tab int r = read(pipe2[READ],\&buf,50); //Read from pipe\\
+                \tab close(pipe2[READ]); printf("P1 received: '\%s'\n",buf);\\
+                \halftab \} \\
+                \halftab while(wait(NULL)>0);\\
+                \}}
+      \end{flushleft}
+    \end{flushleft}
+    \begin{flushleft}
+      \textbf{Gestire la comunicazione}\par
+      Per gestire comunicazioni complesse c'\ace bisogno di definire un "protocollo". Esempio:
+      \begin{itemize}
+        \item Messaggi di lunghezza fissa (magari inviata prima del messaggio)
+        \item Marcatore di fine messaggio (per esempio con carattere NULL o newline)
+      \end{itemize}
+      Pi\acu in generale occorre definire la sequenza di messaggi attesi.
+    \end{flushleft}
+    \begin{flushleft}
+      \textbf{Esempio: redirige lo stdout di cmd1 sullo stdin di cmd2}\\
+      \texttt{\#include <stdio.h> <unistd.h> \\
+      \#define READ 0, WRITE 1 \\
+      int main (int argc, char *argv[]) \{\\
+      \halftab int fd[2];\\
+      \halftab pipe(fd); // Create an unnamed pipe \\
+      \halftab if (fork() != 0) \{ // Parent, writer\\
+      \tab close(fd[READ]); // Close unused end \\
+      \tab dup2(fd[WRITE], 1); // Duplicate used end to stdout \\
+      \tab close(fd[WRITE]); // Close original used end \\
+      \tab execlp(argv[1], argv[1], NULL); // Execute writer program \\
+      \tab perror("error"); // Should never execute \\
+      \halftab \} else \{ // Child, reader \\
+      \tab close(fd[WRITE]); // Close unused end \\
+      \tab dup2(fd[READ], 0); // Duplicate used end to stdin \\
+      \tab close(fd[READ]); // Close original used end\\
+      \tab execlp(argv[2], argv[2], NULL); // Execute reader program \\
+      \tab perror("error"); // Should never execute \\
+      \halftab \}\\
+      \}}
+    \end{flushleft}
+  \end{flushleft}
+\end{flushleft}
+\begin{flushleft}
+  \subsection{FIFO/con nome}
+  \textbf{Pipe con nome/FIFO}\\
+  Le pipe con nome, o \textbf{FIFO}, sono delle pipe che corrispondono a dei file speciali nel 
+  filesystem grazie ai quali i processi, senza vincoli di gerarchia, possono comunicare. \\
+  Un processo pu\aco accedere ad una di queste pipe se ha i permessi sul file 
+  corrispondente ed \ace vincolato, ovviamente, dall'esistenza del file stesso.\\
+  Le FIFO sono interpretate come dei file, perci\aco si possono usare le funzioni di 
+  scrittura/lettura dei file. Restano per\aco delle pipe, con i loro 
+  vincoli e le loro capacità. \\ 
+  \textbf{NB}: non sono dei file effettivi, quindi \textbf{lseek non funziona}, il 
+  loro contenuto \ace sempre vuoto e non vi ci si pu\aco scrivere con un editor!\\
+  Normalmente aprire una FIFO blocca il processo finch\ace anche l'altro lato non \ace stato
+  aperto. Le differenze tra pipe anonime e FIFO sono solo nella loro creazione e gestione. 
+  \begin{flushleft}
+    \textbf{Creare una FIFO}\\
+    \texttt{int mkfifo(const char *pathname, mode\_t mode);}\\
+    Crea una FIFO (un file speciale), solo se non esiste gi\aca, con il nome \texttt{pathname}. Il 
+    parametro mode pu\aco definire i privilegi del file nella solita maniera. 
+    \begin{flushleft}
+      Esempio: \\
+      \texttt{\#include <sys/stat.h><sys/types.h><unistd.h><fcntl.h><stdio.h>\\
+              int main(void)\{\\
+              \halftab char * fifoName = "/tmp/fifo1";\\
+              \halftab mkfifo(fifoName,S\_IRUSR|S\_IWUSR); //Create pipe if it !exist\\
+              \halftab perror("Created?");\\
+              \}}
+    \end{flushleft}
+  \end{flushleft}
+  \begin{flushleft}
+    \textbf{Comunicazione bloccata}\\
+    \texttt{\#include <sys/stat.h><sys/types.h><unistd.h><fcntl.h><stdio.h>\\
+            int main(void)\{\\
+            \halftab char * fifoName = "/tmp/fifo1";\\
+            \halftab mkfifo(fifoName,S\_IRUSR|S\_IWUSR); //Create pipe if it !exist\\
+            \halftab perror("Created?");\\
+            \halftab if (fork() == 0)\{ //Child\\
+            \tab open(fifoName,O\_RDONLY); //Open READ side of pipe...stuck!\\
+            \tab printf("Open read\n");\\
+            \halftab \}else\{\\
+            \tab sleep(3); \\
+            \tab open(fifoName,O\_WRONLY); //Open WRITE side of pipe\\
+            \tab printf("Open write\n");\\
+            \halftab \}\\
+            \}
+            }
+  \end{flushleft}
+  \begin{flushleft}
+    \textbf{Writer} \\
+    \texttt{\#include<sys/stat.h><sys/types.h><unistd.h><fcntl.h><stdio.h><string.h>\\
+            int main (int argc, char *argv[]) \{\\
+            \halftab int fd; char * fifoName = "/tmp/fifo1"; \\
+            \halftab char str1[80], * str2 = "I’m a writer";\\
+            \halftab mkfifo(fifoName,S\_IRUSR|S\_IWUSR); //Create pipe if it !exist\\
+            \halftab fd = open(fifoName, O\_WRONLY); // Open FIFO for write only\\
+            \halftab write(fd, str2, strlen(str2)+1); // write and close\\
+            \halftab close(fd);\\
+            \halftab fd = open(fifoName, O\_RDONLY); // Open FIFO for Read only\\
+            \halftab read(fd, str1, sizeof(str1)); // Read from FIFO\\
+            \halftab printf("Reader is writing: \%s\n", str1);\\
+            \halftab close(fd);
+            \}}
+  \end{flushleft}
+  \begin{flushleft}
+    \textbf{Reader}\\
+    \texttt{\#include<sys/stat.h><sys/types.h><unistd.h><fcntl.h><stdio.h><string.h>\\
+            int main (int argc, char *argv[]) \{\\
+            \halftab int fd; char * fifoName = "/tmp/fifo1"; \\
+            \halftab mkfifo(fifoName,S\_IRUSR|S\_IWUSR); //Create pipe if !exist\\
+            \halftab char str1[80], * str2 = "I'm a reader";\\
+            \halftab fd = open(fifoName , O\_RDONLY); // Open FIFO for read only\\
+            \halftab read(fd, str1, 80); // read from FIFO and close it\\
+            \halftab close(fd);\\
+            \halftab printf("Writer is writing: \%s\n", str1);\\
+            \halftab fd = open(fifoName , O\_WRONLY); // Open FIFO for write only\\
+            \halftab write(fd, str2, strlen(str2)+1); // Write and close\\
+            \halftab close(fd);\\
+            \} }
+  \end{flushleft}
+  \begin{flushleft}
+    \textbf{Comunicazione sul terminale}\\
+    \ac{E} possibile usare le FIFO da terminale, leggendo e scrivendo dati tramite gli 
+    operatori di redirezione. \\
+    \texttt{echo "message for pipe" > /path/nameOfPipe\\
+    cat /path/nameOfPipe}\\
+    \textbf{NB}: non si possono scrivere dati usando editor di testo! Una volta consumati i dati, 
+    questi non sono pi\acu presenti sulla fifo.
+  \end{flushleft}
+\end{flushleft}
+\begin{flushleft}
+  \textbf{Pipe anonime vs FIFO}\\
+  \begin{tabular}{c|c|c}
+    & \textbf{pipe} & \textbf{FIFO} \\
+    \hline 
+    Rappresentazione & Buffer & Buffer \\
+    \hline
+    Rifermento & anonimo & File \\
+    \hline
+    Accesso & 2 FileDescriptor & 1 FileDescriptor \\
+    \hline
+    Persistenza & Eliminazione alla  & Esistenza finch\ace \\ 
+    & terminazione dei processi & c'\ace il file\\
+    \hline
+    Vincoli di accesso & antenato comune & Permessi su file\\
+    \hline
+    Creazione & pipe() & mkfifo() \\
+    \hline
+    MaxBytes per atomicit\aca & PIPE\_BUF = 4096 & PIPE\_BUF = 4096 \\
+  \end{tabular}
+\end{flushleft}
+\begin{flushleft}
+  \textbf{Conlusioni}\\
+  PIPE e FIFO sono sistemi di comunicazione tra processi ("parenti", 
+  tipicamente padre-figlio, nel primo caso e in generale nel secondo caso) che 
+  consentono \textbf{scambi} di informazioni (\textbf{messaggi}) e \textbf{sincronizzazione} (grazie al fatto di 
+  poter essere "bloccanti").
+\end{flushleft}

@@ -1,0 +1,415 @@
+\section{Lab-10: Thread}
+\begin{flushleft}
+  I \textbf{thread} sono singole sequenze di esecuzione all'interno di un processo, aventi alcune 
+  delle propriet\aca dei processi. I threads non sono indipendenti tra loro e condividono il 
+  codice, i dati e le risorse del sistema assegnate al processo di appartenenza. Come 
+  ogni singolo processo, i threads hanno alcuni elementi indipendenti, come lo stack, il 
+  PC ed i registri del sistema.\\
+  La creazione di threads consente un parallelismo delle operazioni in maniera rapida e 
+  semplificata. Context switch tra threads \ace rapido, cos\aci come la loro creazione e 
+  terminazione. Inoltre, la comunicazione tra threads \ace molto veloce.\\
+  \textbf{Per la compilazione \ace necessario aggiungere il flag -pthread, ad esempio:
+  gcc -o program main.c -pthread}
+  \begin{flushleft}
+    \textbf{IN C}\\
+    In C i thread corrispondono a delle funzioni eseguite in parallelo al codice principale. 
+    Ogni thread \ace \textbf{identificato da un ID} e pu\aco essere gestito come un processo figlio, con 
+    funzioni che attendono la sua terminazione. 
+    Sebbene da un punto di vista l'esecuzione di diversi thread sia sempre parallela, a 
+    causa delle politiche di scheduling delle CPU, l'esecuzione può essere parallela solo 
+    se la CPU la supporta, ossia se dispone di più core.
+  \end{flushleft}
+  \subsection{Creazione}
+  \begin{flushleft}
+    \textbf{Creazione}\\
+    \begin{flushleft}
+      \texttt{int pthread\_create(\\
+              pthread\_t *restrict thread, /* Thread ID */\\
+              const pthread\_attr\_t *restrict attr, /* Attributes */\\
+              void *(*start\_routine)(void *), /* Function to be executed */\\
+              void *restrict arg /* Parameters to above function */\\
+              );}
+    \end{flushleft}
+    Quando si crea un nuovo thread, \ace necessario fornire un puntatore pthread\_t, che 
+    verrà riempito con il nuovo ID generato. attr consente di modificare il 
+    comportamento dei thread, mentre start\_routine serve a definire quale funzione 
+    deve essere eseguita dal thread. arg \ace un puntatore void che pu\aco essere utilizzato per 
+    passare qualsiasi argomento sia richiesto. \\
+    NB: void* è il tipo di variabile pi\acu grande e pu\aco quindi essere usato per puntare a qualsiasi struttura di dati
+  \end{flushleft}
+  \begin{flushleft}
+    \textbf{Esempio}\\
+    \texttt{\#include <stdio.h> <pthread.h> <unistd.h> \\
+    void * my\_fun(void * param)\{ \\
+    \halftab printf("This is a thread that received \%d\n", *(int *)param);\\
+    \halftab return (void *)3;\\
+    \} \\
+    int main(void)\{ \\
+    \halftab pthread\_t t\_id;\\
+    \halftab int arg=10;\\
+    // We need to cast the augment to a void *. We are passing the address of the variable!\\
+    \halftab pthread\_create(\&t\_id, NULL, my\_fun, (void *)\&arg);\\
+    \halftab printf("Executed thread with id \%ld\n",t\_id);\\
+    \halftab sleep(3);\\
+    \} }
+    Le modifiche al valore di \texttt{arg} vengono viste anche dal thread 
+  \end{flushleft}
+  \begin{flushleft}
+    All'interno del kernel: \\
+    \begin{flushleft}
+      \texttt{\#include <pthread.h> \\
+      void * my\_fun(void * param)\{ \\
+      \halftab while(1);\\
+      \}\\
+      int main(void)\{ \\
+      \halftab pthread\_t t\_id;\\
+      \halftab pthread\_create(\&t\_id, NULL, my\_fun, NULL);\\
+      \halftab while(1);\\
+      \} }
+    \end{flushleft}
+  \end{flushleft}
+  \subsection{Terminazione}
+  \begin{flushleft}
+    \textbf{Terminazione}\\
+    Un nuovo thread termina in uno dei seguenti modi:
+    \begin{itemize}
+      \item Chiamando la funzione void pthread\_exit(void * retval); dal thread, 
+      specificando un puntatore da restituire.
+      \item Effettuando un return dalla funzione associata al thread, specificando un valore 
+      di ritorno.
+      \item Cancellando il thread da un altro thread.
+      \item Qualche thread chiama exit(), o il thread che esegue main() ritorna dallo 
+      stesso, terminando così tutti i threads.
+    \end{itemize}
+  \end{flushleft}
+  \subsection{Cancellazione}
+  \begin{flushleft}
+    \textbf{Cancellazione}\\
+    \begin{flushleft}
+      \texttt{int pthread\_cancel(pthread\_t thread);}
+    \end{flushleft}
+    Invia una richiesta di cancellazione al thread specificato, il quale reagirà (come e 
+    quando) a seconda di due suoi attributi: cancel state e cancel type. 
+    Il cancel state di un thread definisce se il thread deve terminare o meno quando una 
+    richiesta di cancellazione viene ricevuta. Il cancel type di un thread definisce come il 
+    thread deve terminare. 
+    Sia lo stato che il tipo possono essere definiti alla creazione del thread o durante la 
+    sua esecuzione, all’interno del thread stesso.
+  \end{flushleft}
+  \subsection{Cambiare il thread cancel state}
+  \begin{flushleft}
+    \textbf{Cambiare il thread cancel state}\\
+    \begin{flushleft}
+      \texttt{int pthread\_setcancelstate(int state, int *oldstate);}
+    \end{flushleft}
+    Modifica il cancel state del thread in esecuzione. Mentre oldstate viene riempito 
+    con lo stato precedente, state può contenere una delle seguenti macro:
+    \begin{itemize}
+      \item PTHREAD\_CANCEL\_ENABLE: ogni richiesta di cancellazione viene gestita a 
+      seconda del type del thread. Questa è la modalità default.
+      \item PTHREAD\_CANCEL\_DISABLE: ogni richiesta di cancellazione aspetterà fino a 
+      che il cancel state del thread non diventa PTHREAD\_CANCEL\_ENABLE.
+    \end{itemize}
+  \end{flushleft}
+  \subsection{Cambiare il thread cancel type }
+  \begin{flushleft}
+    \begin{flushleft}
+      \texttt{int pthread\_setcanceltype(int type, int *oldtype); }
+    \end{flushleft}
+    Modifica il cancel type del thread in esecuzione. Mentre oldtype viene riempito con 
+    il type precedente, type può contenere una delle seguenti macro:
+    \begin{itemize}
+      \item PTHREAD\_CANCEL\_DEFERRED: la terminazione aspetta l’esecuzione di un 
+      cancellation point. Questa è la modalità default.
+      \item PTHREAD\_CANCEL\_ASYNCHRONOUS: la terminazione avviene appena la richiesta 
+      viene ricevuta.
+    \end{itemize}
+    Cancellation points sono delle specifiche funzioni definite nella libreria pthread.h 
+    (list). Di solito sono system calls.
+    \begin{flushleft}
+      \textbf{Esempio 1}\\
+      \texttt{\#include <stdio.h> <pthread.h> <unistd.h> \\
+      int i = 1;\\
+      void * my\_fun(void * param)\{ \\
+      \halftab if(i--) \\
+      \halftab pthread\_setcancelstate(PTHREAD\_CANCEL\_DISABLE, NULL); //Change mode\\
+      \halftab printf("Thread \%ld started\n",*(pthread\_t *)param); sleep(3);\\
+      \halftab printf("Thread \%ld finished\n",*(pthread\_t *)param);\\
+      \}\\
+      int main(void)\{\\
+      \halftab pthread\_t t\_id1, t\_id2;\\
+      \halftab pthread\_create(\&t\_id1, NULL, my\_fun, (void *)\&t\_id1); sleep(1); //Create\\
+      \halftab pthread\_cancel(t\_id1); //Cancel\\
+      \halftab printf("Sent cancellation request for thread \%ld\n",t\_id1);\\
+      \halftab pthread\_create(\&t\_id2, NULL, my\_fun, (void *)\&t\_id2); sleep(1); //Create\\
+      \halftab pthread\_cancel(t\_id2); //Cancel\\
+      \halftab printf("Sent cancellation request for thread \%ld\n",t\_id2);\\
+      \halftab sleep(5); printf("Terminating program\n");\\
+      \}  }
+    \end{flushleft}
+    \begin{flushleft}
+      \textbf{Esempio 2}\\
+      \begin{flushleft}
+        \texttt{\#include <stdio.h> <pthread.h> <unistd.h> <string.h> \\
+        int tmp = 0;\\
+        void * my\_fun(void * param)\{ \\ 
+        \halftab pthread\_setcanceltype(*(int *)param,NULL); // Change type\\
+        \halftab for (long unsigned i = 0; i < (0x9FFF0000); i++); //just wait\\
+        \halftab tmp++;\\
+        \halftab open("/tmp/tmp",O\_RDONLY); //Cancellation point!\\
+        \} \\
+        int main(int argc, char ** argv)\{ //call program with ‘async’ or ‘defer’\\
+        \halftab pthread\_t t\_id1; int arg;\\
+        \halftab if(!strcmp(argv[1],"async")) arg = PTHREAD\_CANCEL\_ASYNCHRONOUS;\\
+        \halftab else if(!strcmp(argv[1],"defer")) arg = PTHREAD\_CANCEL\_DEFERRED;\\
+        \halftab pthread\_create(\&t\_id1, NULL, my\_fun, (void *)\&arg); sleep(1); //Create\\
+        \halftab pthread\_cancel(t\_id1); sleep(5); //Cancel\\
+        \halftab printf("Tmp \%d\n",tmp);\\
+        \} }
+      \end{flushleft}
+    \end{flushleft}
+  \end{flushleft}
+  \subsection{Aspettare un thread}
+  \begin{flushleft}
+    \textbf{Aspettare un thread: join}\\
+    Un processo (thread) che avvia un nuovo thread può aspettare la sua terminazione 
+    mediante la funzione: 
+    \begin{flushleft}
+      \texttt{int pthread\_join(pthread\_t thread, void ** retval);}
+    \end{flushleft}
+    Questa funzione ritorna quando il thread identificato da thread termina, o subito 
+    se il thread \ace già terminato. Se il valore di ritorno del thread non è nullo (parametro 
+    di pthread\_exit() o di return), esso viene salvato nella variabile puntata da 
+    retval. Se il thread era stato cancellato, retval è riempito con PTHREAD\_CANCELED.\\
+    Solo se il thread \ace joinable può essere aspettato! \\
+    Un thread può essere aspettato da al massimo un thread
+  \end{flushleft}
+  \subsection{Detach state di un thread}
+  \begin{flushleft}
+    I thread sono creati per impostazione predefinita nello stato joinable, che consente a 
+    un altro thread di attendere la loro terminazione tramite il comando 
+    pthread\_join(). I thread joinable non rilasciano le loro risorse alla terminazione, 
+    ma quando un thread li aspetta (salvando lo stato di uscita, come i sottoprocessi), o 
+    alla terminazione del processo stesso. Al contrario, i thread detached rilasciano le 
+    loro risorse immediatamente al termine, ma non permettono ad altri processi di 
+    aspettarli.
+    NB: un thread detached non può diventare joinable durante la sua esecuzione, 
+    mentre \ace possibile il contrario.
+    \begin{flushleft}
+      \textbf{Cambiare il detach state}
+      \begin{flushleft}
+        \texttt{int pthread\_detach(pthread\_t thread);}
+      \end{flushleft}
+      Questo comando può essere eseguito da un thread qualunque e cambia il detach state 
+      di thread da joinable a detached. 
+      \textbf{Ricorda che una volta cambiato lo stato non si pu\aco invertire}
+    \end{flushleft}
+  \end{flushleft}
+  \begin{flushleft}
+    \textbf{Esempi join 1}\\
+    \texttt{\#include <stdio.h> <pthread.h> <unistd.h> \\
+    void * my\_fun(void * param)\{ \\
+    \halftab printf("Thread \%ld started\n",*(pthread\_t *)param); sleep(3);\\
+    \halftab char * str = "Returned string";\\
+    \halftab pthread\_exit((void *)str); //or ‘return (void *) str;’\\
+    \}\\
+    int main(void)\{ \\
+    \halftab pthread\_t t\_id;\\
+    \halftab void * retFromThread; //This must be a pointer to void!\\
+    \halftab pthread\_create(\&t\_id, NULL, my\_fun, (void *)\&t\_id); //Create\\
+    \halftab pthread\_join(t\_id,\&retFromThread); // wait thread\\
+    \halftab // We must cast the returned value!\\
+    \halftab printf("Thread \%ld returned '\%s'\n",t\_id,(char *)retFromThread);\\
+    \} }
+  \end{flushleft}
+  \begin{flushleft}
+    \textbf{Esempi join 2}\\
+    \texttt{\#include <stdio.h> <pthread.h> <unistd.h> \\
+    void * my\_fun(void *param)\{ \\
+    \halftab printf("This is a thread that received \%d\n", *(int *)param);\\
+    \halftab return (void *)3;\\
+    \} \\
+    int main(void)\{ \\
+    \halftab pthread\_t t\_id;\\
+    \halftab int arg=10, retval; \\
+    \halftab pthread\_create(\&t\_id, NULL, my\_fun, (void *)\&arg);\\
+    \halftab printf("Executed thread with id \%ld\n",t\_id);\\
+    \halftab sleep(3);\\
+    \halftab pthread\_join(t\_id, (void **)\&retval); //A pointer to a void pointer\\
+    \halftab printf("retval=\%d\n", retval);\\
+    \}}
+  \end{flushleft}
+  \begin{flushleft}
+    \textbf{Esempio join 3}\\
+    \texttt{\#include <stdio.h> <pthread.h> <unistd.h> \\
+    void * my\_fun(void *param)\{\\
+    \halftab printf("This is a thread that received \%d\n", *(int *)param);\\
+    \halftab int i = *(int *)param * 2; //Local variable ceases to exist!\\
+    \halftab return (void *)\&i;\\
+    \}\\
+    int main(void)\{\\
+    \halftab pthread\_t t\_id;\\
+    \halftab int arg=10, retval;\\ 
+    \halftab pthread\_create(\&t\_id, NULL, my\_fun, (void *)\&arg);\\
+    \halftab printf("Executed thread with id \%ld\n",t\_id);\\
+    \halftab sleep(3);\\
+    \halftab pthread\_join(t\_id, (void **)\&retval); //A pointer to a void pointer\\
+    \halftab printf("retval=\%d\n", retval);\\
+    \}}
+  \end{flushleft}
+  \subsection{Attributi thread}
+  \begin{flushleft}
+    Ogni thread viene creato con gli attributi specificati nella struttura 
+    \texttt{pthread\_attr\_t}. Questa struttura, analogamente a quella utilizzata per gestire le 
+    maschere di segnale, è un oggetto utilizzato solo quando viene creato un thread ed è 
+    quindi indipendente da esso (se cambia, gli attributi del thread non cambiano).\\
+    La struttura deve essere inizializzata, il che imposta tutti gli attributi al loro valore 
+    predefinito. Una volta utilizzata e non più necessaria, la struct deve essere distrutta.\\
+    I vari attributi della struttura possono e devono essere modificati individualmente 
+    con alcune funzioni dedicate.
+    \begin{itemize}
+      \item \texttt{int pthread\_attr\_init(pthread\_attr\_t *attr)}
+      Inizializza la struttura con tutti gli attributi default. 
+      \item \texttt{int pthread\_attr\_destroy(pthread\_attr\_t *attr)}
+      Distrugge la struttura.
+      \item \texttt{int pthread\_attr\_setxxxx(pthread\_attr\_t *attr, params);}
+      Imposta un certo attributo ad un certo valore.
+      \item int pthread\_attr\_getxxxx(const pthread\_attr\_t *attr, params);
+      Ottiene un certo attributo
+    \end{itemize}
+  \end{flushleft}
+  \begin{flushleft}
+    \textbf{Esempio attributi}\\
+    \texttt{\#include <stdio.h> <pthread.h> <unistd.h> \\
+    void * my\_fun(void *param)\{\\
+    \halftab printf("This is a thread that received \%d\n", *(int *)param);return (void*)3;\\
+    \}\\
+    int main(void)\{ \\
+    \halftab pthread\_t t\_id; pthread\_attr\_t attr;\\
+    \halftab int arg=10, detachSTate;\\
+    \halftab pthread\_attr\_init(\&attr);\\
+    \halftab pthread\_attr\_setdetachstate(\&attr,PTHREAD\_CREATE\_DETACHED); //Set detached\\
+    \halftab pthread\_attr\_getdetachstate(\&attr,\&detachSTate); //Get detach state\\
+    \halftab if(detachSTate == PTHREAD\_CREATE\_DETACHED) printf("Detached\n"); \\
+    \halftab pthread\_create(\&t\_id, \&attr, my\_fun, (void *)\&arg);\\
+    \halftab printf("Executed thread with id \%ld\n",t\_id);\\
+    \halftab pthread\_attr\_setdetachstate(\&attr,PTHREAD\_CREATE\_JOINABLE); //Inneffective\\
+    \halftab sleep(3); pthread\_attr\_destroy(\&attr);\\
+    \halftab int esito = pthread\_join(t\_id, (void **)\&detachSTate); \\
+    \halftab printf("Esito '\%d' is different 0\n", esito);\\
+    \} }
+  \end{flushleft}
+  \subsection{Thread e Segnali}
+  \begin{flushleft}
+    Quando viene inviato un segnale ad un processo non si può sapere quale thread 
+    andrà a gestirlo. Per evitare problemi o comportamenti inattesi, è importante gestire 
+    correttamente le maschere dei segnali dei singoli thread con \\ 
+    \texttt{pthread\_attr\_setsigmask\_np(pthread\_attr\_t *attr,const sigset\_t *sigmask)} \\
+    la quale usa *sigmask per impostare la maschera dei segnali nella struttura *attr.\\
+    È poi possibile usare funzioni come \texttt{sigwait()} e \texttt{sigwaitinfo()} per gestire 
+    l’attesa di un segnale. Infine, è possibile inviare un segnale ad un thread specifico usando \\ 
+    \texttt{int pthread\_kill(pthread\_t thread, int sig);}
+  \end{flushleft}
+\end{flushleft}
+\subsection{Mutex}
+\begin{flushleft}
+  \textbf{Problema della sincronizzazione}\\
+  Quando eseguiamo un programma con più thread essi condividono alcune risorse, tra 
+  le quali le variabili globali. Se entrambi i thread accedono ad una sezione di codice 
+  condivisa ed hanno la necessità di accedervi in maniera esclusiva allora dobbiamo 
+  instaurare una sincronizzazione. I risultati, altrimenti, potrebbero essere inaspettati.
+  \begin{flushleft}
+    \textbf{Esempio}\\
+    \texttt{\#include <pthread.h> <stdlib.h> <unistd.h><stdio.h> \\
+    pthread\_t tid[2]; \\
+    int counter = 0;\\
+    void *thr1(void *arg)\{\\
+    \halftab counter = 1;\\
+    \halftab printf("Thread 1 has started with counter \%d\n",counter);\\
+    \halftab for (long unsigned i = 0; i < (0x00FF0000); i++); //wait some cycles\\
+    \halftab counter += 1;\\
+    \halftab printf("Thread 1 expects 2 and has: \%d\n", counter);\\
+    \} \\
+    void *thr2(void *arg)\{\\
+    \halftab counter = 10;\\
+    \halftab printf("Thread 2 has started with counter \%d\n",counter);\\
+    \halftab for (long unsigned i = 0; i < (0xFFF0000); i++); //wait some cycles\\
+    \halftab counter += 1;\\
+    \halftab printf("Thread 2 expects 11 and has: \%d\n", counter);\\
+    \}\\
+    void main(void)\{ \\
+    \halftab pthread\_create(\&(tid[0]), NULL, thr1,NULL);\\
+    \halftab pthread\_create(\&(tid[1]), NULL, thr2,NULL);\\
+    \halftab pthread\_join(tid[0], NULL);\\
+    \halftab pthread\_join(tid[1], NULL);\\
+    \}}
+  \end{flushleft}
+  I mutex sono dei semafori imposti ai thread. Essi possono proteggere una 
+  determinata sezione di codice, consentendo ad un thread di accedervi in maniera 
+  esclusiva fino allo sblocco del semaforo. Ogni thread che vorrà accedere alla stessa 
+  sezione di codice dovrà aspettare che il semaforo sia sbloccato, andando in sleep fino 
+  alla sua prossima schedulazione.\\
+  I mutex vanno inizializzati e poi assegnati ad una determinata sezione di codice. Il 
+  blocco e sblocco è manuale.\\
+  NB: i mutex non regolano l’accesso alla memoria o alle variabile, ma solo a porzioni 
+  di codice.
+  \subsection{Creazione Eliminazione Mutex}
+  \begin{flushleft}
+    \texttt{int pthread\_mutex\_init(pthread\_mutex\_t *restrict mutex, const pthread\_mutexattr\_t *restrict attr)\\
+    int pthread\_mutex\_destroy(pthread\_mutex\_t *mutex)}
+  \end{flushleft}
+  \subsection{Bloccaggio e sbloccaggio}
+  \begin{flushleft}
+    \texttt{int pthread\_mutex\_lock(pthread\_mutex\_t *mutex)\\
+    int pthread\_mutex\_unlock(pthread\_mutex\_t *mutex)}
+    \begin{flushleft}
+      Dopo essere stato creato, un mutex deve essere bloccato per essere efficace. Non 
+      appena un thread lo blocca, un altro thread deve attendere che venga sbloccato 
+      prima di procedere al suo blocco.\\
+      Quando si richiama il blocco, un thread attende che il mutex sia libero e poi lo blocca
+    \end{flushleft}
+  \end{flushleft}
+  \begin{flushleft}
+    \textbf{Esempio}\\
+    \texttt{\#include <pthread.h> <stdlib.h> <unistd.h><stdio.h> \\
+    pthread\_mutex\_t lock;\\
+    pthread\_t tid[2];\\
+    int counter = 0;\\
+    void* thr1(void* arg)\{\\
+    \halftab pthread\_mutex\_lock(\&lock);\\
+    \halftab counter = 1;\\
+    \halftab printf("Thread 1 has started with counter \%d\n",counter);\\
+    \halftab for (long unsigned i = 0; i < (0x00FF0000); i++);\\
+    \halftab counter += 1;\\
+    \halftab pthread\_mutex\_unlock(\&lock);\\
+    \halftab printf("Thread 1 expects 2 and has: \%d\n", counter);\\
+    \} \\
+    void * thr2(void* arg)\{ \\
+    \halftab pthread\_mutex\_lock(\&lock);\\
+    \halftab counter = 10;\\
+    \halftab printf("Thread 2 has started with counter \%d\n",counter);\\
+    \halftab for (long unsigned i = 0; i < (0xFFF0000); i++);\\
+    \halftab counter += 1;\\
+    \halftab pthread\_mutex\_unlock(\&lock);\\
+    \halftab printf("Thread 2 expects 11 and has: \%d\n", counter);\\
+    \} \\
+    int main(void)\{\\
+    \halftab pthread\_mutex\_init(\&lock, NULL);\\
+    \halftab pthread\_create(\&(tid[0]), NULL, thr1,NULL);\\
+    \halftab pthread\_create(\&(tid[1]), NULL, thr2,NULL);\\
+    \halftab pthread\_join(tid[0], NULL);\\
+    \halftab pthread\_join(tid[1], NULL);\\
+    \halftab pthread\_mutex\_destroy(\&lock);\\
+    \} }
+  \end{flushleft}
+\end{flushleft}
+\begin{flushleft}
+  I “thread” sono una sorta di “processi leggeri” che permettono di eseguire funzioni 
+  “in concorrenza” in modo più semplice rispetto alla generazioni di processi veri e 
+  propri (forking).\\
+  I “MUTEX” sono un metodo semplice ma efficace per eseguire sezioni critiche in 
+  processi multithread.\\
+  È importante limitare al massimo la sezione critica utilizzando lock/unlock per la 
+  porzione di codice più piccola possibile, e solo se assolutamente necessario (per 
+  esempio quando possono capitare accessi concorrenti).
+\end{flushleft}
